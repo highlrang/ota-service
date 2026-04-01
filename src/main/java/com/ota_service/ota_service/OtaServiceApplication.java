@@ -1,4 +1,4 @@
-package com.otaservice.otaservice;
+package com.ota_service.ota_service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
