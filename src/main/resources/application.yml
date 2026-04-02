@@ -7,8 +7,8 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
   jpa:
     hibernate:
       ddl-auto: none
@@ -16,3 +16,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
+jwt:
+  secret: ota-service-demo-secret-key-for-jwt-signing
+  access-token-expiration-seconds: 3600

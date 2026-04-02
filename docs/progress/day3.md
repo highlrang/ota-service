@@ -3,7 +3,12 @@
 ### 작업내용
 Extranet과 Supplier 도메인에 대한 API를 개발한다. 
 1. JPA Entity, Repository 생성
-2. Extranet API 개발
+2. API 기본 구조 생성
+   - Auth Filter
+   - Logging
+   - ExceptionHandling
+   - Swagger
+3. Extranet API 개발
    - 판매자 계정
    - 숙소 등록/수정/조회
    - 예약 관리
