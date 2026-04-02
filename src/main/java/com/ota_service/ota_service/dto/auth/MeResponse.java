@@ -1,11 +1,18 @@
 package com.ota_service.ota_service.dto.auth;
 
-import com.ota_service.ota_service.security.AccountType;
+import lombok.Builder;
 
+@Builder
 public record MeResponse(
-        Long accountId,
         String email,
-        String name,
-        AccountType accountType
+        String code,
+        String name
 ) {
+    public static MeResponse of(String email, String code, String name) {
+        return MeResponse.builder()
+                .email(email)
+                .code(code)
+                .name(name)
+                .build();
+    }
 }

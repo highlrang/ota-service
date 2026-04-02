@@ -14,18 +14,24 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "ACCOMMODATIONS")
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Accommodation extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "source_type", nullable = false)
@@ -72,4 +78,61 @@ public class Accommodation extends BaseTimeEntity {
 
     @Column(name = "check_out_time", nullable = false)
     private LocalTime checkOutTime;
+
+    public static Accommodation createExtranet(
+            Long sellerId,
+            String name,
+            AccommodationRegionType regionType,
+            AccommodationType accommodationType,
+            Long regionId,
+            String address,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            String thumbnailImage,
+            LocalTime checkInTime,
+            LocalTime checkOutTime,
+            String temporaryCode
+    ) {
+        Accommodation accommodation = new Accommodation();
+        accommodation.sourceType = AccommodationSourceType.EXTRANET;
+        accommodation.sellerId = sellerId;
+        accommodation.externalProductId = null;
+        accommodation.name = name;
+        accommodation.regionType = regionType;
+        accommodation.accommodationType = accommodationType;
+        accommodation.regionId = regionId;
+        accommodation.address = address;
+        accommodation.latitude = latitude;
+        accommodation.longitude = longitude;
+        accommodation.thumbnailImage = thumbnailImage;
+        accommodation.businessStatus = BusinessStatus.PENDING_APPROVAL;
+        accommodation.checkInTime = checkInTime;
+        accommodation.checkOutTime = checkOutTime;
+        accommodation.code = temporaryCode;
+        return accommodation;
+    }
+
+    public void updateExtranet(
+            String name,
+            AccommodationRegionType regionType,
+            AccommodationType accommodationType,
+            Long regionId,
+            String address,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            String thumbnailImage,
+            LocalTime checkInTime,
+            LocalTime checkOutTime
+    ) {
+        this.name = name;
+        this.regionType = regionType;
+        this.accommodationType = accommodationType;
+        this.regionId = regionId;
+        this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.thumbnailImage = thumbnailImage;
+        this.checkInTime = checkInTime;
+        this.checkOutTime = checkOutTime;
+    }
 }

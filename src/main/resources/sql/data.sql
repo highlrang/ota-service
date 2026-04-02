@@ -18,27 +18,27 @@ VALUES
     (16, 10, '중문동', 'KR-49-50130-03', 4, '대한민국 제주특별자치도 서귀포시 중문동', 3, TRUE);
 
 -- guest1234!
-INSERT INTO USERS (id, email, password_hash, name, phone_number, status, access_token, refresh_token, refresh_token_expired_at, last_login_at)
+INSERT INTO USERS (id, email, code, password_hash, name, phone_number, status, access_token, refresh_token, refresh_token_expired_at, last_login_at)
 VALUES
-    (1, 'guest1@ota.local', '$2y$10$fj8jGHdShlJFKzrmiSm8FebcWU32U6R3efVi35lfhNL17oL9FH0eO', '이방문', '010-1111-2222', 'ACTIVE', NULL, NULL, NULL, '2026-04-01 10:00:00'),
-    (2, 'guest2@ota.local', '$2y$10$fj8jGHdShlJFKzrmiSm8FebcWU32U6R3efVi35lfhNL17oL9FH0eO', '김단골', '010-3333-4444', 'ACTIVE', NULL, NULL, NULL, '2026-04-01 11:00:00');
+    (1, 'guest1@ota.local', 'USER-0001', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '이방문', '010-1111-2222', 'ACTIVE', NULL, NULL, NULL, '2026-04-01 10:00:00'),
+    (2, 'guest2@ota.local', 'USER-0002', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '김단골', '010-3333-4444', 'ACTIVE', NULL, NULL, NULL, '2026-04-01 11:00:00');
 
-INSERT INTO SELLERS (id, email, password_hash, name, phone_number, status)
+INSERT INTO SELLERS (id, email, code, password_hash, name, phone_number, status)
 VALUES
-    (1, 'seller1@ota.local', '$2y$10$fj8jGHdShlJFKzrmiSm8FebcWU32U6R3efVi35lfhNL17oL9FH0eO', '강남호텔 운영사', '02-555-1234', 'ACTIVE');
+    (1, 'guest1@ota.local', 'SELLER-0001', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '강남호텔 운영사', '02-555-1234', 'ACTIVE');
 
 INSERT INTO ACCOMMODATIONS (
-    id, source_type, seller_id, external_product_id, region_type, accommodation_type, region_id, name, address,
+    id, code, source_type, seller_id, external_product_id, region_type, accommodation_type, region_id, name, address,
     latitude, longitude, thumbnail_image, business_status, check_in_time, check_out_time
 )
 VALUES
     (
-        1, 'EXTRANET', 1, NULL, 'DOMESTIC', 'HOTEL_RESORT', 3, '강남 시티 호텔',
+        1, 'ACC-000001', 'EXTRANET', 1, NULL, 'DOMESTIC', 'HOTEL_RESORT', 3, '강남 시티 호텔',
         '서울특별시 강남구 테헤란로 100',
         37.4980950, 127.0276100, 'https://cdn.ota.local/accommodations/1/thumb.jpg', 'OPEN', '15:00:00', '11:00:00'
     ),
     (
-        2, 'SUPPLIER', NULL, 'SUP-PRD-2001', 'DOMESTIC', 'PENSION_POOL_VILLA', 11, '제주 오션 풀빌라',
+        2, 'ACC-000002', 'SUPPLIER', NULL, 'SUP-PRD-2001', 'DOMESTIC', 'PENSION_POOL_VILLA', 11, '제주 오션 풀빌라',
         '제주특별자치도 제주시 애월해안로 200',
         33.4857000, 126.3902000, 'https://cdn.ota.local/accommodations/2/thumb.jpg', 'OPEN', '16:00:00', '11:00:00'
     );
@@ -48,6 +48,10 @@ VALUES
     (1, '강남 중심에 위치한 비즈니스 호텔', '조식 유료 제공, 지하 주차장 이용 가능'),
     (2, '오션뷰와 개별 수영장을 제공하는 풀빌라', '조식 포함, 전용 주차장 이용 가능');
 
+INSERT INTO SELLER_ACCOMMODATIONS (id, seller_id, accommodation_id, code)
+VALUES
+    (1, 1, 1, 'ACC-000001');
+
 INSERT INTO ACCOMMODATION_IMAGES (id, accommodation_id, image_url, image_type, sort_order)
 VALUES
     (1, 1, 'https://cdn.ota.local/accommodations/1/main.jpg', 'PRIMARY', 1),
@@ -55,11 +59,14 @@ VALUES
     (3, 2, 'https://cdn.ota.local/accommodations/2/main.jpg', 'PRIMARY', 1),
     (4, 2, 'https://cdn.ota.local/accommodations/2/pool.jpg', 'GENERAL', 2);
 
-INSERT INTO ROOMS (id, accommodation_id, room_code, name, description, standard_occupancy, max_occupancy, bed_type, extra_info)
+INSERT INTO ROOMS (
+    id, accommodation_id, room_code, name, description, standard_occupancy, max_occupancy, bed_type, extra_info,
+    base_price, currency, sale_price, refundable_yn, min_stay_nights, max_stay_nights, default_stock
+)
 VALUES
-    (1, 1, 'ROOM-SEOUL-0001', '스탠다드 더블', '도심 전망의 더블 객실', 2, 2, 'DOUBLE', '조식 별도'),
-    (2, 1, 'ROOM-SEOUL-0002', '디럭스 트윈', '욕조가 포함된 트윈 객실', 2, 3, 'TWIN', '엑스트라 베드 가능'),
-    (3, 2, 'ROOM-JEJU-0001', '오션 풀 스위트', '개별 수영장과 오션뷰 제공', 2, 4, 'KING', '바비큐 이용 가능');
+    (1, 1, 'ROOM-SEOUL-0001', '스탠다드 더블', '도심 전망의 더블 객실', 2, 2, 'DOUBLE', '조식 별도', 150000.00, 'KRW', 135000.00, TRUE, 1, 7, 10),
+    (2, 1, 'ROOM-SEOUL-0002', '디럭스 트윈', '욕조가 포함된 트윈 객실', 2, 3, 'TWIN', '엑스트라 베드 가능', 220000.00, 'KRW', 198000.00, FALSE, 1, 5, 5),
+    (3, 2, 'ROOM-JEJU-0001', '오션 풀 스위트', '개별 수영장과 오션뷰 제공', 2, 4, 'KING', '바비큐 이용 가능', 450000.00, 'KRW', 420000.00, TRUE, 2, 7, 3);
 
 INSERT INTO ROOM_IMAGES (id, room_id, image_url, image_type, sort_order)
 VALUES
@@ -69,13 +76,12 @@ VALUES
     (4, 3, 'https://cdn.ota.local/rooms/3/main.jpg', 'PRIMARY', 1);
 
 INSERT INTO ROOM_RATES (
-    id, room_id, rate_name, base_price, currency, sale_price, refundable_yn,
-    min_stay_nights, max_stay_nights, valid_from, valid_to
+    id, room_id, rate_name, base_price, currency, sale_price, refundable_yn, valid_from, valid_to
 )
 VALUES
-    (1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, 1, 7, '2026-04-01', '2026-12-31'),
-    (2, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, 1, 5, '2026-04-01', '2026-12-31'),
-    (3, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, 2, 7, '2026-04-01', '2026-12-31');
+    (1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-01', '2026-12-31'),
+    (2, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-01', '2026-12-31'),
+    (3, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-01', '2026-12-31');
 
 INSERT INTO ROOM_INVENTORIES (id, room_id, inventory_date, total_stock, reserved_stock, available_stock, stop_sale_yn)
 VALUES

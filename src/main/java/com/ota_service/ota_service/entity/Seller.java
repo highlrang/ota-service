@@ -1,11 +1,15 @@
 package com.ota_service.ota_service.entity;
 
+import com.ota_service.ota_service.enums.AccountStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,6 +26,9 @@ public class Seller extends BaseTimeEntity {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
@@ -31,6 +38,19 @@ public class Seller extends BaseTimeEntity {
     @Column(name = "phone_number", nullable = false, length = 30)
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private String status;
+    private AccountStatus status;
+
+    @Column(name = "access_token", length = 512)
+    private String accessToken;
+
+    @Column(name = "refresh_token", length = 512)
+    private String refreshToken;
+
+    @Column(name = "refresh_token_expired_at")
+    private LocalDateTime refreshTokenExpiredAt;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 }

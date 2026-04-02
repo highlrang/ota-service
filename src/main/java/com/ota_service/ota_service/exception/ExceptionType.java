@@ -10,6 +10,7 @@ public enum ExceptionType {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 4012, "인증이 필요합니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, 4030, "접근 권한이 없습니다."),
     ACCOUNT_INACTIVE(HttpStatus.FORBIDDEN, 4031, "비활성화된 계정입니다."),
+    NOT_IMPLEMENTED(HttpStatus.NOT_IMPLEMENTED, 5001, "아직 구현되지 않은 기능입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 5000, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus status;

@@ -4,18 +4,19 @@ import com.ota_service.ota_service.security.AccountType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record LoginResponse(
-        @Schema(example = "1")
-        Long accountId,
-
         @Schema(example = "guest1@ota.local")
         String email,
+
+        @Schema(example = "USER-0001")
+        String code,
 
         @Schema(example = "이방문")
         String name,
 
-        AccountType accountType,
-
         @Schema(description = "Bearer prefix 없이 전달되는 JWT access token")
-        String accessToken
+        String accessToken,
+
+        @Schema(description = "재발급에 사용하는 refresh token")
+        String refreshToken
 ) {
 }

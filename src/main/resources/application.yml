@@ -20,3 +20,8 @@ spring:
 jwt:
   secret: ota-service-demo-secret-key-for-jwt-signing
   access-token-expiration-seconds: 3600
+  refresh-token-expiration-seconds: 604800
+
+app:
+  upload:
+    base-dir: ${java.io.tmpdir}/ota_service/uploads

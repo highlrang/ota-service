@@ -1,7 +1,5 @@
 package com.ota_service.ota_service.config;
 
-import com.ota_service.ota_service.exception.ApiAccessDeniedHandler;
-import com.ota_service.ota_service.exception.ApiAuthenticationEntryPoint;
 import com.ota_service.ota_service.logging.HttpRequestLoggingFilter;
 import com.ota_service.ota_service.security.JwtAuthenticationFilter;
 import com.ota_service.ota_service.security.JwtProperties;
@@ -26,8 +24,6 @@ public class SecurityConfig {
 
     private final HttpRequestLoggingFilter httpRequestLoggingFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
-    private final ApiAccessDeniedHandler apiAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -36,22 +32,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/api/customer/auth/login",
-                                "/api/seller/auth/login"
-                        ).permitAll()
-                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
-                        .requestMatchers("/api/seller/**").hasRole("SELLER")
-                        .anyRequest().authenticated()
-                )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(apiAuthenticationEntryPoint)
-                        .accessDeniedHandler(apiAccessDeniedHandler)
-                )
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(httpRequestLoggingFilter, JwtAuthenticationFilter.class)
                 .build();
