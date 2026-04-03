@@ -3,7 +3,6 @@ package com.ota_service.ota_service.dto.extranet.room;
 import com.ota_service.ota_service.entity.Room;
 import com.ota_service.ota_service.enums.BedType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.math.BigDecimal;
 import lombok.Builder;
 
 @Schema(description = "숙소 상세 내 객실 요약 응답")
@@ -18,13 +17,7 @@ public record ExtranetRoomSummaryResponse(
         @Schema(description = "기준 인원", example = "2")
         Integer standardOccupancy,
         @Schema(description = "최대 인원", example = "3")
-        Integer maxOccupancy,
-        @Schema(description = "객실 기본 기준가", example = "220000.00")
-        BigDecimal basePrice,
-        @Schema(description = "객실 기본 판매가", example = "198000.00")
-        BigDecimal salePrice,
-        @Schema(description = "객실 기본 재고", example = "5")
-        Integer defaultStock
+        Integer maxOccupancy
 ) {
     public static ExtranetRoomSummaryResponse from(Room room) {
         return ExtranetRoomSummaryResponse.builder()
@@ -33,9 +26,6 @@ public record ExtranetRoomSummaryResponse(
                 .bedType(room.getBedType())
                 .standardOccupancy(room.getStandardOccupancy())
                 .maxOccupancy(room.getMaxOccupancy())
-                .basePrice(room.getBasePrice())
-                .salePrice(room.getSalePrice())
-                .defaultStock(room.getDefaultStock())
                 .build();
     }
 }

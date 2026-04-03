@@ -10,6 +10,6 @@ public record UpdateExtranetRoomInventoriesRequest(
         @Schema(description = "객실 재고 목록")
         @Valid
         @NotNull(message = "객실 재고 목록은 필수입니다.")
-        List<UpdateExtranetRoomInventoryItemRequest> inventories
+        List<CreateExtranetRoomInventoryRequest> inventories
 ) {
 }

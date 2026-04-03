@@ -47,11 +47,8 @@ public class RoomRate extends BaseTimeEntity {
     @Column(name = "refundable_yn", nullable = false)
     private Boolean refundable;
 
-    @Column(name = "valid_from", nullable = false)
-    private LocalDate validFrom;
-
-    @Column(name = "valid_to", nullable = false)
-    private LocalDate validTo;
+    @Column(name = "rate_date", nullable = false)
+    private LocalDate rateDate;
 
     @Column(name = "active_yn", nullable = false)
     private Boolean active;
@@ -66,8 +63,7 @@ public class RoomRate extends BaseTimeEntity {
             String currency,
             BigDecimal salePrice,
             Boolean refundable,
-            LocalDate validFrom,
-            LocalDate validTo
+            LocalDate rateDate
     ) {
         return RoomRate.builder()
                 .roomId(roomId)
@@ -76,8 +72,7 @@ public class RoomRate extends BaseTimeEntity {
                 .currency(currency)
                 .salePrice(salePrice)
                 .refundable(refundable)
-                .validFrom(validFrom)
-                .validTo(validTo)
+                .rateDate(rateDate)
                 .active(true)
                 .build();
     }
@@ -88,16 +83,14 @@ public class RoomRate extends BaseTimeEntity {
             String currency,
             BigDecimal salePrice,
             Boolean refundable,
-            LocalDate validFrom,
-            LocalDate validTo
+            LocalDate rateDate
     ) {
         this.rateName = rateName;
         this.basePrice = basePrice;
         this.currency = currency;
         this.salePrice = salePrice;
         this.refundable = refundable;
-        this.validFrom = validFrom;
-        this.validTo = validTo;
+        this.rateDate = rateDate;
         this.active = true;
         this.deletedAt = null;
     }

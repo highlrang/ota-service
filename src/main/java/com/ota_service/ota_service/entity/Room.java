@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -56,26 +55,11 @@ public class Room extends BaseTimeEntity {
     @Column(name = "extra_info", length = 500)
     private String extraInfo;
 
-    @Column(name = "base_price", nullable = false, precision = 12, scale = 2)
-    private BigDecimal basePrice;
-
-    @Column(nullable = false, length = 10)
-    private String currency;
-
-    @Column(name = "sale_price", nullable = false, precision = 12, scale = 2)
-    private BigDecimal salePrice;
-
-    @Column(name = "refundable_yn", nullable = false)
-    private Boolean refundable;
-
     @Column(name = "min_stay_nights", nullable = false)
     private Integer minStayNights;
 
     @Column(name = "max_stay_nights", nullable = false)
     private Integer maxStayNights;
-
-    @Column(name = "default_stock", nullable = false)
-    private Integer defaultStock;
 
     @Column(name = "active_yn", nullable = false)
     private Boolean active;
@@ -92,13 +76,8 @@ public class Room extends BaseTimeEntity {
             Integer maxOccupancy,
             BedType bedType,
             String extraInfo,
-            BigDecimal basePrice,
-            String currency,
-            BigDecimal salePrice,
-            Boolean refundable,
             Integer minStayNights,
-            Integer maxStayNights,
-            Integer defaultStock
+            Integer maxStayNights
     ) {
         return Room.builder()
                 .accommodationId(accommodationId)
@@ -109,13 +88,8 @@ public class Room extends BaseTimeEntity {
                 .maxOccupancy(maxOccupancy)
                 .bedType(bedType)
                 .extraInfo(extraInfo)
-                .basePrice(basePrice)
-                .currency(currency)
-                .salePrice(salePrice)
-                .refundable(refundable)
                 .minStayNights(minStayNights)
                 .maxStayNights(maxStayNights)
-                .defaultStock(defaultStock)
                 .active(true)
                 .deletedAt(null)
                 .build();
@@ -132,13 +106,8 @@ public class Room extends BaseTimeEntity {
             Integer maxOccupancy,
             BedType bedType,
             String extraInfo,
-            BigDecimal basePrice,
-            String currency,
-            BigDecimal salePrice,
-            Boolean refundable,
             Integer minStayNights,
-            Integer maxStayNights,
-            Integer defaultStock
+            Integer maxStayNights
     ) {
         this.name = name;
         this.description = description;
@@ -146,13 +115,8 @@ public class Room extends BaseTimeEntity {
         this.maxOccupancy = maxOccupancy;
         this.bedType = bedType;
         this.extraInfo = extraInfo;
-        this.basePrice = basePrice;
-        this.currency = currency;
-        this.salePrice = salePrice;
-        this.refundable = refundable;
         this.minStayNights = minStayNights;
         this.maxStayNights = maxStayNights;
-        this.defaultStock = defaultStock;
         this.active = true;
         this.deletedAt = null;
     }

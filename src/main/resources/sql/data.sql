@@ -61,12 +61,12 @@ VALUES
 
 INSERT INTO ROOMS (
     id, accommodation_id, room_code, name, description, standard_occupancy, max_occupancy, bed_type, extra_info,
-    base_price, currency, sale_price, refundable_yn, min_stay_nights, max_stay_nights, default_stock
+    min_stay_nights, max_stay_nights
 )
 VALUES
-    (1, 1, 'ROOM-SEOUL-0001', '스탠다드 더블', '도심 전망의 더블 객실', 2, 2, 'DOUBLE', '조식 별도', 150000.00, 'KRW', 135000.00, TRUE, 1, 7, 10),
-    (2, 1, 'ROOM-SEOUL-0002', '디럭스 트윈', '욕조가 포함된 트윈 객실', 2, 3, 'TWIN', '엑스트라 베드 가능', 220000.00, 'KRW', 198000.00, FALSE, 1, 5, 5),
-    (3, 2, 'ROOM-JEJU-0001', '오션 풀 스위트', '개별 수영장과 오션뷰 제공', 2, 4, 'KING', '바비큐 이용 가능', 450000.00, 'KRW', 420000.00, TRUE, 2, 7, 3);
+    (1, 1, 'ROOM-SEOUL-0001', '스탠다드 더블', '도심 전망의 더블 객실', 2, 2, 'DOUBLE', '조식 별도', 1, 7),
+    (2, 1, 'ROOM-SEOUL-0002', '디럭스 트윈', '욕조가 포함된 트윈 객실', 2, 3, 'TWIN', '엑스트라 베드 가능', 1, 5),
+    (3, 2, 'ROOM-JEJU-0001', '오션 풀 스위트', '개별 수영장과 오션뷰 제공', 2, 4, 'KING', '바비큐 이용 가능', 2, 7);
 
 INSERT INTO ROOM_IMAGES (id, room_id, image_url, image_type, sort_order)
 VALUES
@@ -76,19 +76,24 @@ VALUES
     (4, 3, 'https://cdn.ota.local/rooms/3/main.jpg', 'PRIMARY', 1);
 
 INSERT INTO ROOM_RATES (
-    id, room_id, rate_name, base_price, currency, sale_price, refundable_yn, valid_from, valid_to
+    id, room_id, rate_name, base_price, currency, sale_price, refundable_yn, rate_date
 )
 VALUES
-    (1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-01', '2026-12-31'),
-    (2, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-01', '2026-12-31'),
-    (3, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-01', '2026-12-31');
+    (1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-10'),
+    (2, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-11'),
+    (3, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-10'),
+    (4, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-11'),
+    (5, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-20'),
+    (6, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-21');
 
 INSERT INTO EXTRANET_ROOM_RATES (
-    id, room_id, room_rate_id, rate_name, base_price, currency, sale_price, refundable_yn, valid_from, valid_to, active_yn, deleted_at
+    id, room_id, room_rate_id, rate_name, base_price, currency, sale_price, refundable_yn, rate_date, active_yn, deleted_at
 )
 VALUES
-    (1, 1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-01', '2026-12-31', TRUE, NULL),
-    (2, 2, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-01', '2026-12-31', TRUE, NULL);
+    (1, 1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-10', TRUE, NULL),
+    (2, 1, 2, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-11', TRUE, NULL),
+    (3, 2, 3, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-10', TRUE, NULL),
+    (4, 2, 4, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-11', TRUE, NULL);
 
 INSERT INTO SUPPLIER_ACCOMMODATIONS (
     id, source, supplier_property_id, accommodation_id, status, last_synced_at
@@ -107,7 +112,7 @@ INSERT INTO SUPPLIER_RATEPLANS (
     refundable_yn, valid_from, valid_to, status, last_synced_at
 )
 VALUES
-    (1, 'ONDA', 'SUP-RATE-4001', 3, 1, '오션 패키지', 450000.00, 'KRW', 420000.00,
+    (1, 'ONDA', 'SUP-RATE-4001', 5, 1, '오션 패키지', 450000.00, 'KRW', 420000.00,
      TRUE, '2026-04-01', '2026-12-31', 'enabled', '2026-04-01 09:10:00');
 
 INSERT INTO SUPPLIER_RATEPLAN_INVENTORIES (
@@ -140,13 +145,13 @@ VALUES
         '2026-04-01 09:00:00', '2026-04-01 09:01:00', NULL, NULL
     ),
     (
-        2, 2, 2, 3, 3, 'RSV-20260401-0002',
+        2, 2, 2, 3, 5, 'RSV-20260401-0002',
         '2026-04-20', '2026-04-22', '박숙박', '010-3333-4444',
         2, 1, 840000.00, 'CANCELLED',
         '2026-04-01 10:00:00', '2026-04-01 10:01:00', '2026-04-02 08:00:00', NULL
     ),
     (
-        3, 2, 1, 2, 2, 'RSV-20260315-0003',
+        3, 2, 1, 2, 3, 'RSV-20260315-0003',
         '2026-03-20', '2026-03-22', '박숙박', '010-3333-4444',
         2, 0, 396000.00, 'COMPLETED',
         '2026-03-15 14:00:00', '2026-03-15 14:01:00', NULL, NULL

@@ -9,5 +9,7 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     List<Room> findAllByAccommodationIdOrderByIdAsc(Long accommodationId);
 
+    List<Room> findAllByAccommodationIdInAndActiveTrueOrderByAccommodationIdAscIdAsc(List<Long> accommodationIds);
+
     Optional<Room> findByRoomCode(String roomCode);
 }

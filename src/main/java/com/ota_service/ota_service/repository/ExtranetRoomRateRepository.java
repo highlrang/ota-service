@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExtranetRoomRateRepository extends JpaRepository<ExtranetRoomRate, Long> {
 
-    List<ExtranetRoomRate> findAllByRoomIdInAndActiveTrueOrderByRoomIdAscValidFromAscValidToAsc(List<Long> roomIds);
+    List<ExtranetRoomRate> findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(List<Long> roomIds);
 }

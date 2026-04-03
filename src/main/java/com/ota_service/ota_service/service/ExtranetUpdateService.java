@@ -3,6 +3,7 @@ package com.ota_service.ota_service.service;
 import com.ota_service.ota_service.dto.extranet.accommodation.ExtranetAccommodationDetailResponse;
 import com.ota_service.ota_service.dto.extranet.accommodation.UpdateExtranetAccommodationRequest;
 import com.ota_service.ota_service.dto.extranet.room.CreateExtranetRoomImageRequest;
+import com.ota_service.ota_service.dto.extranet.room.CreateExtranetRoomInventoryRequest;
 import com.ota_service.ota_service.dto.extranet.room.CreateExtranetRoomRateRequest;
 import com.ota_service.ota_service.dto.extranet.room.ExtranetRoomDetailViewResponse;
 import com.ota_service.ota_service.dto.extranet.room.ExtranetRoomImageResponse;
@@ -12,7 +13,6 @@ import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomImagesReq
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomImagesResponse;
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomInventoriesRequest;
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomInventoriesResponse;
-import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomInventoryItemRequest;
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomRatesRequest;
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomRatesResponse;
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomRequest;
@@ -115,13 +115,8 @@ public class ExtranetUpdateService {
                 request.maxOccupancy() == null ? room.getMaxOccupancy() : request.maxOccupancy(),
                 request.bedType() == null ? room.getBedType() : request.bedType(),
                 request.extraInfo() == null ? room.getExtraInfo() : request.extraInfo(),
-                request.basePrice() == null ? room.getBasePrice() : request.basePrice(),
-                request.currency() == null ? room.getCurrency() : request.currency(),
-                request.salePrice() == null ? room.getSalePrice() : request.salePrice(),
-                request.refundable() == null ? room.getRefundable() : request.refundable(),
                 request.minStayNights() == null ? room.getMinStayNights() : request.minStayNights(),
-                request.maxStayNights() == null ? room.getMaxStayNights() : request.maxStayNights(),
-                request.defaultStock() == null ? room.getDefaultStock() : request.defaultStock()
+                request.maxStayNights() == null ? room.getMaxStayNights() : request.maxStayNights()
         );
         validateRoom(room);
         roomRepository.save(room);
@@ -163,90 +158,46 @@ public class ExtranetUpdateService {
         Room room = resolveOwnedRoom(extranetId, roomCode);
         validateRateRequests(request.rates());
 
-        List<ExtranetRoomRate> existingRates = extranetRoomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscValidFromAscValidToAsc(List.of(room.getId()));
-        Map<String, ExtranetRoomRate> existingRateByKey = new HashMap<>();
-        for (ExtranetRoomRate existingRate : existingRates) {
-            existingRateByKey.put(rateKey(existingRate.getRateName(), existingRate.getValidFrom(), existingRate.getValidTo()), existingRate);
-        }
-
-        List<ExtranetRoomRate> ratesToSave = new ArrayList<>();
-        Set<String> requestedKeys = new HashSet<>();
-
-        for (CreateExtranetRoomRateRequest rateRequest : request.rates()) {
-            String rateKey = rateKey(rateRequest.rateName(), rateRequest.validFrom(), rateRequest.validTo());
-            if (!requestedKeys.add(rateKey)) {
-                throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 요금 기간이 있습니다.");
-            }
-
-            ExtranetRoomRate existingRate = existingRateByKey.get(rateKey);
-            if (existingRate != null) {
-                RoomRate canonicalRate = roomRateRepository.findById(existingRate.getRoomRateId())
-                        .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "원본 요금에 연결된 통합 요금제가 없습니다."));
-                canonicalRate.update(
-                        rateRequest.rateName(),
-                        rateRequest.basePrice(),
-                        rateRequest.currency(),
-                        rateRequest.salePrice(),
-                        rateRequest.refundable(),
-                        rateRequest.validFrom(),
-                        rateRequest.validTo()
-                );
-                roomRateRepository.save(canonicalRate);
-                existingRate.update(
-                        rateRequest.rateName(),
-                        rateRequest.basePrice(),
-                        rateRequest.currency(),
-                        rateRequest.salePrice(),
-                        rateRequest.refundable(),
-                        rateRequest.validFrom(),
-                        rateRequest.validTo()
-                );
-                ratesToSave.add(existingRate);
-                continue;
-            }
-
-            RoomRate canonicalRate = roomRateRepository.save(RoomRate.create(
-                    room.getId(),
-                    rateRequest.rateName(),
-                    rateRequest.basePrice(),
-                    rateRequest.currency(),
-                    rateRequest.salePrice(),
-                    rateRequest.refundable(),
-                    rateRequest.validFrom(),
-                    rateRequest.validTo()
-            ));
-            ratesToSave.add(ExtranetRoomRate.create(
-                    room.getId(),
-                    canonicalRate.getId(),
-                    rateRequest.rateName(),
-                    rateRequest.basePrice(),
-                    rateRequest.currency(),
-                    rateRequest.salePrice(),
-                    rateRequest.refundable(),
-                    rateRequest.validFrom(),
-                    rateRequest.validTo()
-            ));
-        }
-
-        List<ExtranetRoomRate> ratesToDelete = existingRates.stream()
-                .filter(existingRate -> !requestedKeys.contains(
-                        rateKey(existingRate.getRateName(), existingRate.getValidFrom(), existingRate.getValidTo())
-                ))
-                .toList();
-
-        if (!ratesToDelete.isEmpty()) {
+        List<ExtranetRoomRate> existingRates = extranetRoomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(List.of(room.getId()));
+        if (!existingRates.isEmpty()) {
             LocalDateTime deletedAt = LocalDateTime.now();
-            for (ExtranetRoomRate rate : ratesToDelete) {
+            for (ExtranetRoomRate rate : existingRates) {
                 rate.softDelete(deletedAt);
                 RoomRate canonicalRate = roomRateRepository.findById(rate.getRoomRateId())
                         .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "원본 요금에 연결된 통합 요금제가 없습니다."));
                 canonicalRate.softDelete(deletedAt);
                 roomRateRepository.save(canonicalRate);
             }
-            extranetRoomRateRepository.saveAll(ratesToDelete);
+            extranetRoomRateRepository.saveAll(existingRates);
         }
 
-        List<ExtranetRoomRate> savedRates = extranetRoomRateRepository.saveAll(ratesToSave);
+        List<ExtranetRoomRate> savedRates = new ArrayList<>();
+        for (CreateExtranetRoomRateRequest rateRequest : request.rates()) {
+            LocalDate date = rateRequest.validFrom();
+            while (!date.isAfter(rateRequest.validTo())) {
+                RoomRate canonicalRate = roomRateRepository.save(RoomRate.create(
+                        room.getId(),
+                        rateRequest.rateName(),
+                        rateRequest.basePrice(),
+                        rateRequest.currency(),
+                        rateRequest.salePrice(),
+                        rateRequest.refundable(),
+                        date
+                ));
+                savedRates.add(ExtranetRoomRate.create(
+                        room.getId(),
+                        canonicalRate.getId(),
+                        rateRequest.rateName(),
+                        rateRequest.basePrice(),
+                        rateRequest.currency(),
+                        rateRequest.salePrice(),
+                        rateRequest.refundable(),
+                        date
+                ));
+                date = date.plusDays(1);
+            }
+        }
+        savedRates = extranetRoomRateRepository.saveAll(savedRates);
 
         return UpdateExtranetRoomRatesResponse.of(
                 roomCode,
@@ -274,24 +225,28 @@ public class ExtranetUpdateService {
             existingInventories.forEach(inventory -> inventory.softDelete(deletedAt));
             roomInventoryRepository.saveAll(existingInventories);
         }
-        List<RoomInventory> savedInventories = roomInventoryRepository.saveAll(request.inventories().stream()
-                .map(inventory -> {
-                    RoomInventory existing = existingByDate.get(inventory.inventoryDate());
-                    int reservedStock = existing == null ? 0 : existing.getReservedStock();
-                    if (inventory.totalStock() < reservedStock) {
-                        throw new ApiException(ExceptionType.INVALID_INPUT, "전체 재고는 기존 예약 수량보다 작을 수 없습니다.");
-                    }
-                    int availableStock = inventory.totalStock() - reservedStock;
-                    return RoomInventory.create(
-                            room.getId(),
-                            inventory.inventoryDate(),
-                            inventory.totalStock(),
-                            reservedStock,
-                            availableStock,
-                            inventory.stopSale()
-                    );
-                })
-                .toList());
+        List<RoomInventory> inventoriesToSave = new ArrayList<>();
+        for (CreateExtranetRoomInventoryRequest inventoryRequest : request.inventories()) {
+            LocalDate date = inventoryRequest.validFrom();
+            while (!date.isAfter(inventoryRequest.validTo())) {
+                RoomInventory existing = existingByDate.get(date);
+                int reservedStock = existing == null ? 0 : existing.getReservedStock();
+                if (inventoryRequest.totalStock() < reservedStock) {
+                    throw new ApiException(ExceptionType.INVALID_INPUT, "전체 재고는 기존 예약 수량보다 작을 수 없습니다.");
+                }
+                int availableStock = inventoryRequest.stopSale() ? 0 : inventoryRequest.totalStock() - reservedStock;
+                inventoriesToSave.add(RoomInventory.create(
+                        room.getId(),
+                        date,
+                        inventoryRequest.totalStock(),
+                        reservedStock,
+                        availableStock,
+                        inventoryRequest.stopSale()
+                ));
+                date = date.plusDays(1);
+            }
+        }
+        List<RoomInventory> savedInventories = roomInventoryRepository.saveAll(inventoriesToSave);
 
         return UpdateExtranetRoomInventoriesResponse.of(
                 roomCode,
@@ -315,12 +270,6 @@ public class ExtranetUpdateService {
         if (room.getMaxStayNights() < room.getMinStayNights()) {
             throw new ApiException(ExceptionType.INVALID_INPUT, "객실 기본 최대 숙박 일수는 최소 숙박 일수보다 작을 수 없습니다.");
         }
-        if (room.getBasePrice().signum() < 0 || room.getSalePrice().signum() < 0) {
-            throw new ApiException(ExceptionType.INVALID_INPUT, "가격은 0 이상이어야 합니다.");
-        }
-        if (room.getDefaultStock() < 0) {
-            throw new ApiException(ExceptionType.INVALID_INPUT, "객실 기본 재고는 0 이상이어야 합니다.");
-        }
     }
 
     private void validateImageRequests(List<CreateExtranetRoomImageRequest> images) {
@@ -331,22 +280,33 @@ public class ExtranetUpdateService {
     }
 
     private void validateRateRequests(List<CreateExtranetRoomRateRequest> rates) {
+        Set<LocalDate> rateDates = new HashSet<>();
         for (CreateExtranetRoomRateRequest rate : rates) {
             if (rate.validTo().isBefore(rate.validFrom())) {
                 throw new ApiException(ExceptionType.INVALID_INPUT, "요금 적용 종료일은 시작일보다 빠를 수 없습니다.");
             }
+            LocalDate date = rate.validFrom();
+            while (!date.isAfter(rate.validTo())) {
+                if (!rateDates.add(date)) {
+                    throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 요금 일자가 있습니다.");
+                }
+                date = date.plusDays(1);
+            }
         }
     }
 
-    private String rateKey(String rateName, LocalDate validFrom, LocalDate validTo) {
-        return rateName + "|" + validFrom + "|" + validTo;
-    }
-
-    private void validateInventoryRequests(List<UpdateExtranetRoomInventoryItemRequest> inventories) {
+    private void validateInventoryRequests(List<CreateExtranetRoomInventoryRequest> inventories) {
         Set<LocalDate> inventoryDates = new HashSet<>();
-        for (UpdateExtranetRoomInventoryItemRequest inventory : inventories) {
-            if (!inventoryDates.add(inventory.inventoryDate())) {
-                throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 재고 일자가 있습니다.");
+        for (CreateExtranetRoomInventoryRequest inventory : inventories) {
+            if (inventory.validTo().isBefore(inventory.validFrom())) {
+                throw new ApiException(ExceptionType.INVALID_INPUT, "재고 적용 종료일은 시작일보다 빠를 수 없습니다.");
+            }
+            LocalDate date = inventory.validFrom();
+            while (!date.isAfter(inventory.validTo())) {
+                if (!inventoryDates.add(date)) {
+                    throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 재고 일자가 있습니다.");
+                }
+                date = date.plusDays(1);
             }
         }
     }

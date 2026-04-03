@@ -20,10 +20,8 @@ public record ExtranetRoomRateResponse(
         BigDecimal salePrice,
         @Schema(description = "환불 가능 여부", example = "false")
         Boolean refundable,
-        @Schema(description = "적용 시작일", example = "2026-04-01")
-        LocalDate validFrom,
-        @Schema(description = "적용 종료일", example = "2026-12-31")
-        LocalDate validTo
+        @Schema(description = "요금 일자", example = "2026-04-01")
+        LocalDate rateDate
 ) {
     public static ExtranetRoomRateResponse from(RoomRate roomRate) {
         return ExtranetRoomRateResponse.builder()
@@ -32,8 +30,7 @@ public record ExtranetRoomRateResponse(
                 .currency(roomRate.getCurrency())
                 .salePrice(roomRate.getSalePrice())
                 .refundable(roomRate.getRefundable())
-                .validFrom(roomRate.getValidFrom())
-                .validTo(roomRate.getValidTo())
+                .rateDate(roomRate.getRateDate())
                 .build();
     }
 
@@ -44,8 +41,7 @@ public record ExtranetRoomRateResponse(
                 .currency(roomRate.getCurrency())
                 .salePrice(roomRate.getSalePrice())
                 .refundable(roomRate.getRefundable())
-                .validFrom(roomRate.getValidFrom())
-                .validTo(roomRate.getValidTo())
+                .rateDate(roomRate.getRateDate())
                 .build();
     }
 }

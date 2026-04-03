@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -75,7 +76,7 @@ public class ExtranetRoomService {
 
         List<Long> roomIds = List.of(room.getId());
         List<RoomImage> roomImages = roomImageRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscSortOrderAsc(roomIds);
-        List<ExtranetRoomRate> roomRates = extranetRoomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscValidFromAscValidToAsc(roomIds);
+        List<ExtranetRoomRate> roomRates = extranetRoomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(roomIds);
         List<RoomInventory> roomInventories = roomInventoryRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscInventoryDateAsc(roomIds);
 
         return ExtranetRoomDetailResponse.of(
@@ -101,13 +102,8 @@ public class ExtranetRoomService {
                 request.maxOccupancy(),
                 request.bedType(),
                 request.extraInfo(),
-                request.basePrice(),
-                request.currency(),
-                request.salePrice(),
-                request.refundable(),
                 request.minStayNights(),
-                request.maxStayNights(),
-                request.defaultStock()
+                request.maxStayNights()
         );
         Room savedRoom = roomRepository.save(room);
         savedRoom.changeRoomCode(codeGenerator.generateRoomCode(savedRoom.getId()));
@@ -122,12 +118,7 @@ public class ExtranetRoomService {
 
         List<CreateExtranetRoomInventoryRequest> inventories =
                 request.inventories() == null ? Collections.emptyList() : request.inventories();
-
-        List<RoomInventory> savedInventories = roomInventoryRepository.saveAll(
-                inventories.stream()
-                        .map(inventoryRequest -> toRoomInventory(savedRoomId, inventoryRequest))
-                        .toList()
-        );
+        List<RoomInventory> savedInventories = roomInventoryRepository.saveAll(expandRoomInventories(savedRoomId, inventories));
 
         List<CreateExtranetRoomRateRequest> rates = request.rates() == null ? Collections.emptyList() : request.rates();
 
@@ -185,17 +176,9 @@ public class ExtranetRoomService {
         if (request.maxStayNights() < request.minStayNights()) {
             throw new ApiException(ExceptionType.INVALID_INPUT, "객실 기본 최대 숙박 일수는 최소 숙박 일수보다 작을 수 없습니다.");
         }
-        if (request.defaultStock() < 0) {
-            throw new ApiException(ExceptionType.INVALID_INPUT, "객실 기본 재고는 0 이상이어야 합니다.");
-        }
-
         validateImageRequests(request.images());
-        if (request.inventories() != null) {
-            validateInventoryRequests(request.inventories());
-        }
-        if (request.rates() != null) {
-            validateRateRequests(request.rates());
-        }
+        validateInventoryRequests(request.inventories());
+        validateRateRequests(request.rates());
     }
 
     private void validateImageRequests(List<CreateExtranetRoomImageRequest> images) {
@@ -210,16 +193,31 @@ public class ExtranetRoomService {
     private void validateInventoryRequests(List<CreateExtranetRoomInventoryRequest> inventories) {
         Set<LocalDate> inventoryDates = new HashSet<>();
         for (CreateExtranetRoomInventoryRequest inventory : inventories) {
-            if (!inventoryDates.add(inventory.inventoryDate())) {
-                throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 재고 일자가 있습니다.");
+            if (inventory.validTo().isBefore(inventory.validFrom())) {
+                throw new ApiException(ExceptionType.INVALID_INPUT, "재고 적용 종료일은 시작일보다 빠를 수 없습니다.");
+            }
+            LocalDate date = inventory.validFrom();
+            while (!date.isAfter(inventory.validTo())) {
+                if (!inventoryDates.add(date)) {
+                    throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 재고 일자가 있습니다.");
+                }
+                date = date.plusDays(1);
             }
         }
     }
 
     private void validateRateRequests(List<CreateExtranetRoomRateRequest> rates) {
+        Set<LocalDate> rateDates = new HashSet<>();
         for (CreateExtranetRoomRateRequest rate : rates) {
             if (rate.validTo().isBefore(rate.validFrom())) {
                 throw new ApiException(ExceptionType.INVALID_INPUT, "요금 적용 종료일은 시작일보다 빠를 수 없습니다.");
+            }
+            LocalDate date = rate.validFrom();
+            while (!date.isAfter(rate.validTo())) {
+                if (!rateDates.add(date)) {
+                    throw new ApiException(ExceptionType.INVALID_INPUT, "중복된 요금 일자가 있습니다.");
+                }
+                date = date.plusDays(1);
             }
         }
     }
@@ -233,43 +231,53 @@ public class ExtranetRoomService {
         );
     }
 
-    private RoomInventory toRoomInventory(Long roomId, CreateExtranetRoomInventoryRequest request) {
-        return RoomInventory.create(
-                roomId,
-                request.inventoryDate(),
-                request.totalStock(),
-                0,
-                request.totalStock(),
-                false
-        );
-    }
-
     private List<ExtranetRoomRate> createExtranetRates(Long roomId, List<CreateExtranetRoomRateRequest> requests) {
-        List<ExtranetRoomRate> savedRates = new java.util.ArrayList<>();
+        List<ExtranetRoomRate> savedRates = new ArrayList<>();
         for (CreateExtranetRoomRateRequest request : requests) {
-            RoomRate canonicalRate = roomRateRepository.save(RoomRate.create(
-                    roomId,
-                    request.rateName(),
-                    request.basePrice(),
-                    request.currency(),
-                    request.salePrice(),
-                    request.refundable(),
-                    request.validFrom(),
-                    request.validTo()
-            ));
-            savedRates.add(extranetRoomRateRepository.save(ExtranetRoomRate.create(
-                    roomId,
-                    canonicalRate.getId(),
-                    request.rateName(),
-                    request.basePrice(),
-                    request.currency(),
-                    request.salePrice(),
-                    request.refundable(),
-                    request.validFrom(),
-                    request.validTo()
-            )));
+            LocalDate date = request.validFrom();
+            while (!date.isAfter(request.validTo())) {
+                RoomRate canonicalRate = roomRateRepository.save(RoomRate.create(
+                        roomId,
+                        request.rateName(),
+                        request.basePrice(),
+                        request.currency(),
+                        request.salePrice(),
+                        request.refundable(),
+                        date
+                ));
+                savedRates.add(extranetRoomRateRepository.save(ExtranetRoomRate.create(
+                        roomId,
+                        canonicalRate.getId(),
+                        request.rateName(),
+                        request.basePrice(),
+                        request.currency(),
+                        request.salePrice(),
+                        request.refundable(),
+                        date
+                )));
+                date = date.plusDays(1);
+            }
         }
         return savedRates;
+    }
+
+    private List<RoomInventory> expandRoomInventories(Long roomId, List<CreateExtranetRoomInventoryRequest> requests) {
+        List<RoomInventory> inventories = new ArrayList<>();
+        for (CreateExtranetRoomInventoryRequest request : requests) {
+            LocalDate date = request.validFrom();
+            while (!date.isAfter(request.validTo())) {
+                inventories.add(RoomInventory.create(
+                        roomId,
+                        date,
+                        request.totalStock(),
+                        0,
+                        request.stopSale() ? 0 : request.totalStock(),
+                        request.stopSale()
+                ));
+                date = date.plusDays(1);
+            }
+        }
+        return inventories;
     }
 
     private String extractExtension(String fileName) {

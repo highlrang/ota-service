@@ -11,13 +11,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "PAYMENTS")
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment extends BaseTimeEntity {
 
     @Id
@@ -48,4 +51,27 @@ public class Payment extends BaseTimeEntity {
 
     @Column(name = "failed_at")
     private LocalDateTime failedAt;
+
+    public static Payment createPaid(
+            Long reservationId,
+            String paymentNo,
+            String paymentMethod,
+            BigDecimal paymentAmount,
+            String currency,
+            LocalDateTime approvedAt
+    ) {
+        Payment payment = new Payment();
+        payment.reservationId = reservationId;
+        payment.paymentNo = paymentNo;
+        payment.paymentMethod = paymentMethod;
+        payment.paymentAmount = paymentAmount;
+        payment.currency = currency;
+        payment.paymentStatus = PaymentStatus.PAID;
+        payment.approvedAt = approvedAt;
+        return payment;
+    }
+
+    public void changePaymentNo(String paymentNo) {
+        this.paymentNo = paymentNo;
+    }
 }

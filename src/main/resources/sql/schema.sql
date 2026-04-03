@@ -4,10 +4,14 @@ DROP TABLE IF EXISTS REFUNDS;
 DROP TABLE IF EXISTS PAYMENTS;
 DROP TABLE IF EXISTS RESERVATIONS;
 DROP TABLE IF EXISTS ROOM_INVENTORIES;
+DROP TABLE IF EXISTS SUPPLIER_RATEPLAN_INVENTORIES;
+DROP TABLE IF EXISTS SUPPLIER_RATEPLANS;
 DROP TABLE IF EXISTS EXTRANET_ROOM_RATES;
 DROP TABLE IF EXISTS ROOM_RATES;
+DROP TABLE IF EXISTS SUPPLIER_ROOMS;
 DROP TABLE IF EXISTS ROOM_IMAGES;
 DROP TABLE IF EXISTS ROOMS;
+DROP TABLE IF EXISTS SUPPLIER_ACCOMMODATIONS;
 DROP TABLE IF EXISTS ACCOMMODATION_IMAGES;
 DROP TABLE IF EXISTS ACCOMMODATION_DETAILS;
 DROP TABLE IF EXISTS EXTRANET_ACCOMMODATIONS;
@@ -178,13 +182,8 @@ CREATE TABLE ROOMS (
     max_occupancy INT NOT NULL COMMENT '최대 인원',
     bed_type VARCHAR(100) NULL COMMENT '침대 유형',
     extra_info VARCHAR(500) NULL COMMENT '기타 정보',
-    base_price DECIMAL(12,2) NOT NULL COMMENT '객실 기본 기준가',
-    currency VARCHAR(10) NOT NULL COMMENT '객실 기본 통화',
-    sale_price DECIMAL(12,2) NOT NULL COMMENT '객실 기본 판매가',
-    refundable_yn BOOLEAN NOT NULL DEFAULT FALSE COMMENT '객실 기본 환불 가능 여부',
     min_stay_nights INT NOT NULL DEFAULT 1 COMMENT '객실 기본 최소 숙박 일수',
     max_stay_nights INT NOT NULL DEFAULT 1 COMMENT '객실 기본 최대 숙박 일수',
-    default_stock INT NOT NULL DEFAULT 0 COMMENT '객실 기본 재고',
     active_yn BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     deleted_at DATETIME NULL COMMENT '삭제 일시',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
@@ -195,11 +194,8 @@ CREATE TABLE ROOMS (
     KEY idx_rooms_active (accommodation_id, active_yn),
     CONSTRAINT fk_rooms_accommodation
         FOREIGN KEY (accommodation_id) REFERENCES ACCOMMODATIONS (id),
-    CONSTRAINT chk_rooms_base_price CHECK (base_price >= 0),
-    CONSTRAINT chk_rooms_sale_price CHECK (sale_price >= 0),
     CONSTRAINT chk_rooms_min_stay_nights CHECK (min_stay_nights > 0),
     CONSTRAINT chk_rooms_max_stay_nights CHECK (max_stay_nights > 0),
-    CONSTRAINT chk_rooms_default_stock CHECK (default_stock >= 0),
     CONSTRAINT chk_rooms_stay_nights_order CHECK (max_stay_nights >= min_stay_nights),
     CONSTRAINT chk_rooms_standard_occupancy CHECK (standard_occupancy > 0),
     CONSTRAINT chk_rooms_max_occupancy CHECK (max_occupancy > 0),
@@ -232,21 +228,19 @@ CREATE TABLE ROOM_RATES (
     currency VARCHAR(10) NOT NULL COMMENT '통화',
     sale_price DECIMAL(12,2) NOT NULL COMMENT '판매 요금',
     refundable_yn BOOLEAN NOT NULL DEFAULT FALSE COMMENT '환불 가능 여부',
-    valid_from DATE NOT NULL COMMENT '적용 시작일',
-    valid_to DATE NOT NULL COMMENT '적용 종료일',
+    rate_date DATE NOT NULL COMMENT '요금 일자',
     active_yn BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     deleted_at DATETIME NULL COMMENT '삭제 일시',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     PRIMARY KEY (id),
     KEY idx_room_rates_room_id (room_id),
-    KEY idx_room_rates_valid_range (room_id, valid_from, valid_to),
+    UNIQUE KEY uk_room_rates_room_date (room_id, rate_date),
     KEY idx_room_rates_active (room_id, active_yn),
     CONSTRAINT fk_room_rates_room
         FOREIGN KEY (room_id) REFERENCES ROOMS (id),
     CONSTRAINT chk_room_rates_base_price CHECK (base_price >= 0),
-    CONSTRAINT chk_room_rates_sale_price CHECK (sale_price >= 0),
-    CONSTRAINT chk_room_rates_valid_range CHECK (valid_to >= valid_from)
+    CONSTRAINT chk_room_rates_sale_price CHECK (sale_price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='객실별 판매 요금 정책';
 
 CREATE TABLE EXTRANET_ROOM_RATES (
@@ -258,8 +252,7 @@ CREATE TABLE EXTRANET_ROOM_RATES (
     currency VARCHAR(10) NOT NULL COMMENT '통화',
     sale_price DECIMAL(12,2) NOT NULL COMMENT '판매 요금',
     refundable_yn BOOLEAN NOT NULL DEFAULT FALSE COMMENT '환불 가능 여부',
-    valid_from DATE NOT NULL COMMENT '적용 시작일',
-    valid_to DATE NOT NULL COMMENT '적용 종료일',
+    rate_date DATE NOT NULL COMMENT '요금 일자',
     active_yn BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
     deleted_at DATETIME NULL COMMENT '삭제 일시',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
@@ -273,8 +266,7 @@ CREATE TABLE EXTRANET_ROOM_RATES (
     CONSTRAINT fk_extranet_room_rates_room_rate
         FOREIGN KEY (room_rate_id) REFERENCES ROOM_RATES (id),
     CONSTRAINT chk_extranet_room_rates_base_price CHECK (base_price >= 0),
-    CONSTRAINT chk_extranet_room_rates_sale_price CHECK (sale_price >= 0),
-    CONSTRAINT chk_extranet_room_rates_valid_range CHECK (valid_to >= valid_from)
+    CONSTRAINT chk_extranet_room_rates_sale_price CHECK (sale_price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Extranet 원본 객실 요금 정보';
 
 CREATE TABLE SUPPLIER_ACCOMMODATIONS (
@@ -398,7 +390,7 @@ CREATE TABLE ROOM_INVENTORIES (
 
 CREATE TABLE RESERVATIONS (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT '예약 ID',
-    user_id BIGINT NOT NULL COMMENT '예약 사용자 ID',
+    user_id BIGINT NULL COMMENT '회원 예약 사용자 ID, 비회원 예약은 NULL',
     accommodation_id BIGINT NOT NULL COMMENT '숙소 ID',
     room_id BIGINT NOT NULL COMMENT '객실 ID',
     room_rate_id BIGINT NOT NULL COMMENT '적용 요금 ID',

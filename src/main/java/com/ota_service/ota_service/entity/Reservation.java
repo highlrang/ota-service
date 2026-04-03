@@ -12,20 +12,23 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "RESERVATIONS")
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Reservation extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private Long userId;
 
     @Column(name = "accommodation_id", nullable = false)
@@ -76,4 +79,42 @@ public class Reservation extends BaseTimeEntity {
 
     @Column(name = "failed_at")
     private LocalDateTime failedAt;
+
+    public static Reservation createConfirmed(
+            Long userId,
+            Long accommodationId,
+            Long roomId,
+            Long roomRateId,
+            String reservationNo,
+            LocalDate checkInDate,
+            LocalDate checkOutDate,
+            String guestName,
+            String guestPhoneNumber,
+            Integer adultCount,
+            Integer childCount,
+            BigDecimal totalAmount,
+            LocalDateTime confirmedAt
+    ) {
+        Reservation reservation = new Reservation();
+        reservation.userId = userId;
+        reservation.accommodationId = accommodationId;
+        reservation.roomId = roomId;
+        reservation.roomRateId = roomRateId;
+        reservation.reservationNo = reservationNo;
+        reservation.checkInDate = checkInDate;
+        reservation.checkOutDate = checkOutDate;
+        reservation.guestName = guestName;
+        reservation.guestPhoneNumber = guestPhoneNumber;
+        reservation.adultCount = adultCount;
+        reservation.childCount = childCount;
+        reservation.totalAmount = totalAmount;
+        reservation.reservationStatus = ReservationStatus.CONFIRMED;
+        reservation.requestedAt = confirmedAt;
+        reservation.confirmedAt = confirmedAt;
+        return reservation;
+    }
+
+    public void changeReservationNo(String reservationNo) {
+        this.reservationNo = reservationNo;
+    }
 }

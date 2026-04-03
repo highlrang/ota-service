@@ -11,6 +11,7 @@ import com.ota_service.ota_service.entity.SupplierAccommodation;
 import com.ota_service.ota_service.entity.SupplierRatePlan;
 import com.ota_service.ota_service.entity.SupplierRoom;
 import com.ota_service.ota_service.entity.Room;
+import com.ota_service.ota_service.entity.RoomInventory;
 import com.ota_service.ota_service.entity.RoomRate;
 import com.ota_service.ota_service.entity.SupplierRatePlanInventory;
 import com.ota_service.ota_service.enums.AccommodationSourceType;
@@ -23,6 +24,7 @@ import com.ota_service.ota_service.repository.AccommodationRepository;
 import com.ota_service.ota_service.repository.SupplierAccommodationRepository;
 import com.ota_service.ota_service.repository.SupplierRatePlanRepository;
 import com.ota_service.ota_service.repository.SupplierRoomRepository;
+import com.ota_service.ota_service.repository.RoomInventoryRepository;
 import com.ota_service.ota_service.repository.RoomRateRepository;
 import com.ota_service.ota_service.repository.RoomRepository;
 import com.ota_service.ota_service.repository.SupplierRatePlanInventoryRepository;
@@ -32,6 +34,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +52,7 @@ public class OndaWebhookService {
     private final SupplierRoomRepository supplierRoomRepository;
     private final SupplierRatePlanRepository supplierRatePlanRepository;
     private final RoomRepository roomRepository;
+    private final RoomInventoryRepository roomInventoryRepository;
     private final RoomRateRepository roomRateRepository;
     private final SupplierRatePlanInventoryRepository supplierRatePlanInventoryRepository;
     private final OndaSupplierContentClient ondaSupplierContentClient;
@@ -74,15 +79,24 @@ public class OndaWebhookService {
         String target = requiredText(eventDetail, "target");
         switch (target) {
             case "property" -> upsertProperty(requiredId(eventDetail, "property_id"));
-            case "roomtype" -> upsertRoomtype(
-                    requiredId(eventDetail, "property_id"),
-                    requiredId(eventDetail, "roomtype_id")
-            );
-            case "rateplan" -> upsertRateplan(
-                    requiredId(eventDetail, "property_id"),
-                    requiredId(eventDetail, "roomtype_id"),
-                    requiredId(eventDetail, "rateplan_id")
-            );
+            case "roomtype" -> {
+                String propertyId = requiredId(eventDetail, "property_id");
+                if (!isSupplierContentSyncAllowed(propertyId)) {
+                    return;
+                }
+                upsertRoomtype(propertyId, requiredId(eventDetail, "roomtype_id"));
+            }
+            case "rateplan" -> {
+                String propertyId = requiredId(eventDetail, "property_id");
+                if (!isSupplierContentSyncAllowed(propertyId)) {
+                    return;
+                }
+                upsertRateplan(
+                        propertyId,
+                        requiredId(eventDetail, "roomtype_id"),
+                        requiredId(eventDetail, "rateplan_id")
+                );
+            }
             default -> throw new ApiException(ExceptionType.INVALID_INPUT, "지원하지 않는 contents target 입니다: " + target);
         }
     }
@@ -93,17 +107,29 @@ public class OndaWebhookService {
 
         switch (target) {
             case "property" -> updatePropertyStatus(requiredId(eventDetail, "property_id"), status);
-            case "roomtype" -> updateRoomtypeStatus(
-                    requiredId(eventDetail, "property_id"),
-                    requiredId(eventDetail, "roomtype_id"),
-                    status
-            );
-            case "rateplan" -> updateRateplanStatus(
-                    requiredId(eventDetail, "property_id"),
-                    requiredId(eventDetail, "roomtype_id"),
-                    requiredId(eventDetail, "rateplan_id"),
-                    status
-            );
+            case "roomtype" -> {
+                String propertyId = requiredId(eventDetail, "property_id");
+                if (!isSupplierContentSyncAllowed(propertyId)) {
+                    return;
+                }
+                updateRoomtypeStatus(
+                        propertyId,
+                        requiredId(eventDetail, "roomtype_id"),
+                        status
+                );
+            }
+            case "rateplan" -> {
+                String propertyId = requiredId(eventDetail, "property_id");
+                if (!isSupplierContentSyncAllowed(propertyId)) {
+                    return;
+                }
+                updateRateplanStatus(
+                        propertyId,
+                        requiredId(eventDetail, "roomtype_id"),
+                        requiredId(eventDetail, "rateplan_id"),
+                        status
+                );
+            }
             default -> throw new ApiException(ExceptionType.INVALID_INPUT, "지원하지 않는 status target 입니다: " + target);
         }
     }
@@ -116,6 +142,9 @@ public class OndaWebhookService {
         int processedCount = 0;
         for (JsonNode itemNode : eventDetails) {
             OndaInventoryItem item = toInventoryItem(itemNode);
+            if (!isSupplierContentSyncAllowed(item.propertyId())) {
+                continue;
+            }
             upsertInventory(item);
             processedCount++;
         }
@@ -232,13 +261,8 @@ public class OndaWebhookService {
                         defaultInteger(content.maxOccupancy(), defaultInteger(content.standardOccupancy(), 2)),
                         content.bedType(),
                         content.extraInfo(),
-                        defaultPrice(content.basePrice()),
-                        defaultCurrency(content.currency()),
-                        defaultSalePrice(content.basePrice(), content.salePrice()),
-                        defaultBoolean(content.refundable(), false),
                         defaultInteger(content.minStayNights(), 1),
-                        defaultInteger(content.maxStayNights(), 30),
-                        defaultInteger(content.defaultStock(), 0)
+                        defaultInteger(content.maxStayNights(), 30)
                 )
                 : roomRepository.findById(supplierRoom.getRoomId())
                         .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 객실 매핑에 연결된 통합 객실이 없습니다."));
@@ -251,13 +275,8 @@ public class OndaWebhookService {
                 defaultInteger(content.maxOccupancy(), defaultInteger(content.standardOccupancy(), 2)),
                 content.bedType(),
                 content.extraInfo(),
-                defaultPrice(content.basePrice()),
-                defaultCurrency(content.currency()),
-                defaultSalePrice(content.basePrice(), content.salePrice()),
-                defaultBoolean(content.refundable(), false),
                 defaultInteger(content.minStayNights(), 1),
-                defaultInteger(content.maxStayNights(), 30),
-                defaultInteger(content.defaultStock(), 0)
+                defaultInteger(content.maxStayNights(), 30)
         );
         room.activate();
 
@@ -284,41 +303,37 @@ public class OndaWebhookService {
         OndaRateplanContent content = ondaSupplierContentClient.fetchRateplan(propertyId, roomtypeId, rateplanId);
 
         LocalDate validFrom = content.validFrom() != null ? content.validFrom() : LocalDate.now();
-        LocalDate validTo = content.validTo() != null ? content.validTo() : validFrom.plusYears(10);
+        LocalDate validTo = content.validTo() != null ? content.validTo() : validFrom;
 
         SupplierRatePlan supplierRatePlan = supplierRatePlanRepository
                 .findBySourceAndSupplierRateplanId(SOURCE, rateplanId)
                 .orElse(null);
-        RoomRate roomRate = supplierRatePlan == null
-                ? RoomRate.create(
-                        room.getId(),
-                        defaultRateName(content.name(), rateplanId),
-                        defaultPrice(content.basePrice()),
-                        defaultCurrency(content.currency()),
-                        defaultSalePrice(content.basePrice(), content.salePrice()),
-                        defaultBoolean(content.refundable(), false),
-                        validFrom,
-                        validTo
-                )
-                : roomRateRepository.findById(supplierRatePlan.getRoomRateId())
-                        .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 요금제 매핑에 연결된 통합 요금제가 없습니다."));
+        RoomRate representativeRoomRate = null;
+        LocalDate date = validFrom;
+        while (!date.isAfter(validTo)) {
+            RoomRate dailyRate = upsertCanonicalRoomRate(
+                    room.getId(),
+                    defaultRateName(content.name(), rateplanId),
+                    defaultPrice(content.basePrice()),
+                    defaultCurrency(content.currency()),
+                    defaultSalePrice(content.basePrice(), content.salePrice()),
+                    defaultBoolean(content.refundable(), false),
+                    date
+            );
+            if (representativeRoomRate == null) {
+                representativeRoomRate = dailyRate;
+            }
+            date = date.plusDays(1);
+        }
 
-        roomRate.setRoomId(room.getId());
-        roomRate.update(
-                defaultRateName(content.name(), rateplanId),
-                defaultPrice(content.basePrice()),
-                defaultCurrency(content.currency()),
-                defaultSalePrice(content.basePrice(), content.salePrice()),
-                defaultBoolean(content.refundable(), false),
-                validFrom,
-                validTo
-        );
+        if (representativeRoomRate == null) {
+            throw new ApiException(ExceptionType.INTERNAL_SERVER_ERROR, "일자별 요금 생성에 실패했습니다.");
+        }
 
-        RoomRate savedRoomRate = roomRateRepository.save(roomRate);
         SupplierRatePlan savedSupplierRatePlan = supplierRatePlan == null
-                ? SupplierRatePlan.of(SOURCE, rateplanId, savedRoomRate.getId(), supplierRoom.getId())
+                ? SupplierRatePlan.of(SOURCE, rateplanId, representativeRoomRate.getId(), supplierRoom.getId())
                 : supplierRatePlan;
-        savedSupplierRatePlan.setRoomRateId(savedRoomRate.getId());
+        savedSupplierRatePlan.setRoomRateId(representativeRoomRate.getId());
         savedSupplierRatePlan.setSupplierRoomId(supplierRoom.getId());
         savedSupplierRatePlan.updateContent(
                 defaultRateName(content.name(), rateplanId),
@@ -346,8 +361,10 @@ public class OndaWebhookService {
 
                     accommodationRepository.findById(supplierAccommodation.getAccommodationId())
                             .ifPresent(accommodation -> {
-                                accommodation.setBusinessStatus(BusinessStatus.CLOSED);
-                                accommodationRepository.save(accommodation);
+                                if (accommodation.getSourceType() == AccommodationSourceType.SUPPLIER) {
+                                    accommodation.setBusinessStatus(BusinessStatus.CLOSED);
+                                    accommodationRepository.save(accommodation);
+                                }
                             });
                 });
     }
@@ -382,11 +399,18 @@ public class OndaWebhookService {
                     supplierRatePlan.markSynced(status);
                     supplierRatePlanRepository.save(supplierRatePlan);
 
-                    roomRateRepository.findById(supplierRatePlan.getRoomRateId())
-                            .ifPresent(roomRate -> {
-                                roomRate.softDelete(resolveDeletedAt(status));
-                                roomRateRepository.save(roomRate);
-                            });
+                    SupplierRoom supplierRoom = supplierRoomRepository.findById(supplierRatePlan.getSupplierRoomId())
+                            .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 요금제 매핑에 연결된 외부 객실이 없습니다."));
+                    List<RoomRate> roomRates = roomRateRepository.findAllByRoomIdAndActiveTrueAndRateDateBetweenOrderByRateDateAsc(
+                            supplierRoom.getRoomId(),
+                            supplierRatePlan.getValidFrom(),
+                            supplierRatePlan.getValidTo()
+                    );
+                    if (!roomRates.isEmpty()) {
+                        LocalDateTime deletedAt = resolveDeletedAt(status);
+                        roomRates.forEach(roomRate -> roomRate.softDelete(deletedAt));
+                        roomRateRepository.saveAll(roomRates);
+                    }
                 });
     }
 
@@ -396,8 +420,18 @@ public class OndaWebhookService {
         }
 
         SupplierRatePlan supplierRatePlan = ensureSupplierRatePlan(item.propertyId(), item.roomtypeId(), item.rateplanId());
-        RoomRate roomRate = roomRateRepository.findById(supplierRatePlan.getRoomRateId())
-                .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 요금제 매핑에 연결된 통합 요금제가 없습니다."));
+        SupplierRoom supplierRoom = supplierRoomRepository.findById(supplierRatePlan.getSupplierRoomId())
+                .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 요금제 매핑에 연결된 외부 객실이 없습니다."));
+        RoomRate roomRate = upsertCanonicalRoomRate(
+                supplierRoom.getRoomId(),
+                supplierRatePlan.getRateName(),
+                item.basicPrice(),
+                supplierRatePlan.getCurrency(),
+                item.salePrice(),
+                supplierRatePlan.getRefundable(),
+                item.date()
+        );
+        upsertCanonicalRoomInventory(supplierRoom.getRoomId(), item.date(), defaultInteger(item.vacancy(), 0));
 
         SupplierRatePlanInventory inventory = supplierRatePlanInventoryRepository.findByRoomRateIdAndInventoryDate(
                 roomRate.getId(),
@@ -428,9 +462,64 @@ public class OndaWebhookService {
         supplierRatePlanRepository.save(supplierRatePlan);
     }
 
+    private RoomRate upsertCanonicalRoomRate(
+            Long roomId,
+            String rateName,
+            BigDecimal basePrice,
+            String currency,
+            BigDecimal salePrice,
+            Boolean refundable,
+            LocalDate rateDate
+    ) {
+        RoomRate roomRate = roomRateRepository.findByRoomIdAndRateDateAndActiveTrue(roomId, rateDate)
+                .orElseGet(() -> RoomRate.create(
+                        roomId,
+                        rateName,
+                        basePrice,
+                        currency,
+                        salePrice,
+                        refundable,
+                        rateDate
+                ));
+        roomRate.setRoomId(roomId);
+        roomRate.update(rateName, basePrice, currency, salePrice, refundable, rateDate);
+        return roomRateRepository.save(roomRate);
+    }
+
+    private void upsertCanonicalRoomInventory(Long roomId, LocalDate inventoryDate, int vacancy) {
+        RoomInventory roomInventory = roomInventoryRepository.findByRoomIdAndInventoryDateAndActiveTrue(roomId, inventoryDate)
+                .orElseGet(() -> RoomInventory.create(
+                        roomId,
+                        inventoryDate,
+                        vacancy,
+                        0,
+                        vacancy,
+                        vacancy <= 0
+                ));
+
+        int reservedStock = roomInventory.getId() == null ? 0 : roomInventory.getReservedStock();
+        if (vacancy < reservedStock) {
+            throw new ApiException(ExceptionType.INVALID_INPUT, "외부 재고 수량은 이미 예약된 수량보다 작을 수 없습니다.");
+        }
+        roomInventory.setTotalStock(vacancy);
+        roomInventory.setReservedStock(reservedStock);
+        roomInventory.setAvailableStock(vacancy - reservedStock);
+        roomInventory.setStopSale(vacancy <= 0);
+        roomInventory.setActive(true);
+        roomInventory.setDeletedAt(null);
+        roomInventoryRepository.save(roomInventory);
+    }
+
     private SupplierAccommodation ensureSupplierAccommodation(String propertyId) {
         return supplierAccommodationRepository.findBySourceAndSupplierPropertyId(SOURCE, propertyId)
                 .orElseGet(() -> upsertProperty(propertyId));
+    }
+
+    private boolean isSupplierContentSyncAllowed(String propertyId) {
+        SupplierAccommodation supplierAccommodation = ensureSupplierAccommodation(propertyId);
+        Accommodation accommodation = accommodationRepository.findById(supplierAccommodation.getAccommodationId())
+                .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 숙소 매핑에 연결된 통합 숙소가 없습니다."));
+        return accommodation.getSourceType() == AccommodationSourceType.SUPPLIER;
     }
 
     private SupplierRoom ensureSupplierRoom(String propertyId, String roomtypeId) {

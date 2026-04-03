@@ -29,4 +29,8 @@ public class CodeGenerator {
     public String generateReservationCode(LocalDate reservationDate, Long sequence) {
         return "RSV-" + reservationDate.format(RESERVATION_DATE_FORMAT) + "-" + String.format("%04d", sequence);
     }
+
+    public String generatePaymentCode(LocalDate paymentDate, Long sequence) {
+        return "PAY-" + paymentDate.format(RESERVATION_DATE_FORMAT) + "-" + String.format("%04d", sequence);
+    }
 }

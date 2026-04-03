@@ -31,6 +31,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/customer/auth/login",
             "/api/extranet/auth/login"
     );
+    private static final Set<String> PUBLIC_CUSTOMER_GET_PREFIXES = Set.of(
+            "/api/customer/accommodations"
+    );
+    private static final Set<String> OPTIONAL_AUTH_CUSTOMER_POST_URIS = Set.of(
+            "/api/customer/reservations"
+    );
 
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
@@ -47,20 +53,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            if (isOptionalAuthenticatedRequest(request)) {
+                handleOptionalAuthenticatedRequest(request, response, filterChain);
+                return;
+            }
+
             AccountType requiredAccountType = getRequiredAccountType(request);
             if (requiredAccountType == null) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-            if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
+            String token = extractBearerToken(request);
+            if (token == null) {
                 writeErrorResponse(response, ExceptionType.UNAUTHORIZED);
                 return;
             }
 
-            String token = bearerToken.substring(7);
             if (!jwtTokenProvider.isValidToken(token)) {
                 writeErrorResponse(response, ExceptionType.UNAUTHORIZED);
                 return;
@@ -72,16 +81,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            account,
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + account.accountType().name()))
-                    );
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            MDC.put("userId", String.valueOf(account.accountId()));
-
+            setAuthentication(account, request);
             filterChain.doFilter(request, response);
         } finally {
             SecurityContextHolder.clearContext();
@@ -92,8 +92,69 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean isPublicRequest(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
         return PUBLIC_URIS.contains(requestUri)
+                || isPublicCustomerGetRequest(request)
                 || requestUri.startsWith("/swagger-ui/")
                 || requestUri.startsWith("/v3/api-docs/");
+    }
+
+    private boolean isOptionalAuthenticatedRequest(HttpServletRequest request) {
+        return "POST".equalsIgnoreCase(request.getMethod())
+                && OPTIONAL_AUTH_CUSTOMER_POST_URIS.contains(request.getRequestURI());
+    }
+
+    private boolean isPublicCustomerGetRequest(HttpServletRequest request) {
+        if (!"GET".equalsIgnoreCase(request.getMethod())) {
+            return false;
+        }
+
+        String requestUri = request.getRequestURI();
+        return PUBLIC_CUSTOMER_GET_PREFIXES.stream().anyMatch(requestUri::startsWith);
+    }
+
+    private void handleOptionalAuthenticatedRequest(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+        String token = extractBearerToken(request);
+        if (token == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (!jwtTokenProvider.isValidToken(token)) {
+            writeErrorResponse(response, ExceptionType.UNAUTHORIZED);
+            return;
+        }
+
+        AuthenticatedAccount account = jwtTokenProvider.getAuthenticatedAccount(token);
+        if (account.accountType() != AccountType.CUSTOMER) {
+            writeErrorResponse(response, ExceptionType.ACCESS_DENIED);
+            return;
+        }
+
+        setAuthentication(account, request);
+        filterChain.doFilter(request, response);
+    }
+
+    private String extractBearerToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (!StringUtils.hasText(bearerToken) || !bearerToken.startsWith("Bearer ")) {
+            return null;
+        }
+        return bearerToken.substring(7);
+    }
+
+    private void setAuthentication(AuthenticatedAccount account, HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        account,
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + account.accountType().name()))
+                );
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        MDC.put("userId", String.valueOf(account.accountId()));
     }
 
     private AccountType getRequiredAccountType(HttpServletRequest request) {
