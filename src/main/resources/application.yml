@@ -25,3 +25,8 @@ jwt:
 app:
   upload:
     base-dir: ${java.io.tmpdir}/ota_service/uploads
+
+onda:
+  supplier:
+    base-url: ${ONDA_SUPPLIER_BASE_URL:https://dapi.tport.dev}
+    authorization: ${ONDA_SUPPLIER_AUTHORIZATION:}

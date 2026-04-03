@@ -5,12 +5,12 @@
 
 ### 의사결정
 1. 사용자 테이블 관리
-   - Extranet 판매자 계정은 고객 사용자와 역할이 다르므로 `USERS`와 분리하여 `SELLERS` 테이블로 관리한다
+   - Extranet 판매자 계정은 고객 사용자와 역할이 다르므로 `USERS`와 분리하여 `EXTRANETS` 테이블로 관리한다
 2. Extranet, Supplier로부터 유입된 상품 정보는 Accommodations 테이블 하나로 관리한다. 
    - 상품 목록 조회 시 두 가지 유형 상품을 병합할 필요 없이 효율적으로 조회할 수 있도록 하기 위함
    - 여러 채널의 상이한 데이터를 관리하기 위해 `source_type`으로 출처를 구분하고 다음과 같이 컬럼 또는 별도 테이블로 관리한다
-     - Extranet 상품은 `seller_id`를 통해 판매자 계정(`SELLERS`)과 연결한다
-     - Supplier 상품은 외부 공급사에서 관리하는 상품 번호를 `external_product_id` 컬럼으로 관리한다
+     - Extranet 상품은 `extranet_id`를 통해 판매자 계정(`EXTRANETS`)과 연결한다
+     - Supplier 상품은 외부 공급사에서 관리하는 상품 번호를 `supplier_product_id` 컬럼으로 관리한다
    - 외부 상품 번호는 현재 숫자 형태여도 향후 영문/특수문자 조합이 들어올 수 있으므로 정수형이 아닌 문자열 타입으로 관리한다
 2. Accommodations 상세 설명 테이블 분리
    - 상세 설명은 길이가 길고 상품 목록 조회 시에는 필요하지 않으므로 별도의 테이블로 분리하여 조회 성능을 개선

@@ -29,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Set<String> PUBLIC_URIS = Set.of(
             "/swagger-ui.html",
             "/api/customer/auth/login",
-            "/api/seller/auth/login"
+            "/api/extranet/auth/login"
     );
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -101,8 +101,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (requestUri.startsWith("/api/customer/")) {
             return AccountType.CUSTOMER;
         }
-        if (requestUri.startsWith("/api/seller/")) {
-            return AccountType.SELLER;
+        if (requestUri.startsWith("/api/extranet/")) {
+            return AccountType.EXTRANET;
         }
         return null;
     }

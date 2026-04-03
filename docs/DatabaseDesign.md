@@ -39,7 +39,7 @@ OTA 서비스의 핵심 도메인은 사용자, 숙소, 객실, 가격, 재고, 
 | created_at | DATETIME | 생성일시 |
 | updated_at | DATETIME | 수정일시 |
 
-### 3.2 판매자 `SELLERS`
+### 3.2 판매자 `EXTRANETS`
 
 Extranet에서 숙소를 등록/운영하는 판매자 계정을 관리한다.
 
@@ -59,7 +59,7 @@ Extranet에서 숙소를 등록/운영하는 판매자 계정을 관리한다.
 판매자가 Extranet에 직접 등록하고, Supplier로부터 공급받은 숙소 정보를 관리한다.
 지역은 별도 `REGIONS` 테이블로 관리하며, 숙소는 최하위 또는 서비스 기준 지역을 `region_id`로 참조한다.
 상세 설명은 별도 `ACCOMMODATION_DETAILS` 테이블로 분리하여 관리한다.
-`source_type`이 `EXTRANET`이면 `seller_id`를 사용하고, `SUPPLIER`면 외부 상품 식별자인 `external_product_id`를 사용한다.
+`source_type`이 `EXTRANET`이면 `extranet_id`를 사용하고, `SUPPLIER`면 외부 상품 식별자인 `supplier_product_id`를 사용한다.
 외부 상품 식별자는 현재 숫자 형태여도 향후 영문 prefix, 하이픈 등 포맷 확장 가능성을 고려해 `VARCHAR`로 관리한다.
 
 | 컬럼명             | 타입                      | 설명                  |
@@ -67,8 +67,8 @@ Extranet에서 숙소를 등록/운영하는 판매자 계정을 관리한다.
 | id              | BIGINT PK               | 숙소 ID               |
 | code            | VARCHAR(50) UNIQUE      | 숙소 식별 코드          |
 | source_type     | ENUM(SourceType)        | Extranet / Supplier |
-| seller_id       | BIGINT FK -> SELLERS.id | Extranet 판매자 ID |
-| external_product_id | VARCHAR(100)        | 외부 공급사 상품 번호 |
+| extranet_id       | BIGINT FK -> EXTRANETS.id | Extranet 판매자 ID |
+| supplier_product_id | VARCHAR(100)        | 외부 공급사 상품 번호 |
 | region_type     | ENUM(AccommodationRegionType) | 국내 / 해외       |
 | accommodation_type | ENUM(AccommodationType) | 업소 종류           |
 | region_id       | BIGINT FK -> REGIONS.id | 지역 ID               |
@@ -83,7 +83,7 @@ Extranet에서 숙소를 등록/운영하는 판매자 계정을 관리한다.
 | created_at      | DATETIME                | 생성일시                |
 | updated_at      | DATETIME                | 수정일시                |
 
-#### 3.3.1 판매자 숙소 원본 `SELLER_ACCOMMODATIONS`
+#### 3.3.1 판매자 숙소 원본 `EXTRANET_ACCOMMODATIONS`
 
 Extranet 판매자가 등록한 원본 숙소 데이터를 관리한다.
 등록 시 통합 `ACCOMMODATIONS`와 1:1로 연결되며, 판매자 입력 원본과 통합 상품 ID를 함께 보관한다.
@@ -91,7 +91,7 @@ Extranet 판매자가 등록한 원본 숙소 데이터를 관리한다.
 | 컬럼명 | 타입 | 설명 |
 | --- | --- | --- |
 | id | BIGINT PK | 판매자 숙소 원본 ID |
-| seller_id | BIGINT FK -> SELLERS.id | Extranet 판매자 ID |
+| extranet_id | BIGINT FK -> EXTRANETS.id | Extranet 판매자 ID |
 | accommodation_id | BIGINT UNIQUE, FK -> ACCOMMODATIONS.id | 통합 숙소 ID |
 | code | VARCHAR(50) UNIQUE | 숙소 식별 코드 |
 | region_type | ENUM(AccommodationRegionType) | 국내 / 해외 |

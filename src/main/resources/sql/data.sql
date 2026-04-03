@@ -23,12 +23,12 @@ VALUES
     (1, 'guest1@ota.local', 'USER-0001', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '이방문', '010-1111-2222', 'ACTIVE', NULL, NULL, NULL, '2026-04-01 10:00:00'),
     (2, 'guest2@ota.local', 'USER-0002', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '김단골', '010-3333-4444', 'ACTIVE', NULL, NULL, NULL, '2026-04-01 11:00:00');
 
-INSERT INTO SELLERS (id, email, code, password_hash, name, phone_number, status)
+INSERT INTO EXTRANETS (id, email, code, password_hash, name, phone_number, status)
 VALUES
-    (1, 'guest1@ota.local', 'SELLER-0001', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '강남호텔 운영사', '02-555-1234', 'ACTIVE');
+    (1, 'guest1@ota.local', 'EXTRANET-0001', '$2a$10$bZc7A77MS2kiypJ0Y.1PJesVYXaW6DvKcRctdP1Hibdaq0EFY9z2i', '강남호텔 운영사', '02-555-1234', 'ACTIVE');
 
 INSERT INTO ACCOMMODATIONS (
-    id, code, source_type, seller_id, external_product_id, region_type, accommodation_type, region_id, name, address,
+    id, code, source_type, extranet_id, supplier_product_id, region_type, accommodation_type, region_id, name, address,
     latitude, longitude, thumbnail_image, business_status, check_in_time, check_out_time
 )
 VALUES
@@ -48,7 +48,7 @@ VALUES
     (1, '강남 중심에 위치한 비즈니스 호텔', '조식 유료 제공, 지하 주차장 이용 가능'),
     (2, '오션뷰와 개별 수영장을 제공하는 풀빌라', '조식 포함, 전용 주차장 이용 가능');
 
-INSERT INTO SELLER_ACCOMMODATIONS (id, seller_id, accommodation_id, code)
+INSERT INTO EXTRANET_ACCOMMODATIONS (id, extranet_id, accommodation_id, code)
 VALUES
     (1, 1, 1, 'ACC-000001');
 
@@ -82,6 +82,40 @@ VALUES
     (1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-01', '2026-12-31'),
     (2, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-01', '2026-12-31'),
     (3, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-01', '2026-12-31');
+
+INSERT INTO EXTRANET_ROOM_RATES (
+    id, room_id, room_rate_id, rate_name, base_price, currency, sale_price, refundable_yn, valid_from, valid_to, active_yn, deleted_at
+)
+VALUES
+    (1, 1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-01', '2026-12-31', TRUE, NULL),
+    (2, 2, 2, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-01', '2026-12-31', TRUE, NULL);
+
+INSERT INTO SUPPLIER_ACCOMMODATIONS (
+    id, source, supplier_property_id, accommodation_id, status, last_synced_at
+)
+VALUES
+    (1, 'ONDA', 'SUP-PRD-2001', 2, 'enabled', '2026-04-01 09:00:00');
+
+INSERT INTO SUPPLIER_ROOMS (
+    id, source, supplier_roomtype_id, room_id, supplier_accommodation_id, status, last_synced_at
+)
+VALUES
+    (1, 'ONDA', 'SUP-ROOM-3001', 3, 1, 'enabled', '2026-04-01 09:05:00');
+
+INSERT INTO SUPPLIER_RATEPLANS (
+    id, source, supplier_rateplan_id, room_rate_id, supplier_room_id, rate_name, base_price, currency, sale_price,
+    refundable_yn, valid_from, valid_to, status, last_synced_at
+)
+VALUES
+    (1, 'ONDA', 'SUP-RATE-4001', 3, 1, '오션 패키지', 450000.00, 'KRW', 420000.00,
+     TRUE, '2026-04-01', '2026-12-31', 'enabled', '2026-04-01 09:10:00');
+
+INSERT INTO SUPPLIER_RATEPLAN_INVENTORIES (
+    id, room_rate_id, inventory_date, base_price, sale_price, extra_adult, extra_child, extra_infant, promotion_type, vacancy, stop_sale_yn
+)
+VALUES
+    (1, 3, '2026-04-20', 450000.00, 420000.00, 30000.00, 15000.00, 0.00, NULL, 2, FALSE),
+    (2, 3, '2026-04-21', 450000.00, 420000.00, 30000.00, 15000.00, 0.00, 'SPRING', 2, FALSE);
 
 INSERT INTO ROOM_INVENTORIES (id, room_id, inventory_date, total_stock, reserved_stock, available_stock, stop_sale_yn)
 VALUES

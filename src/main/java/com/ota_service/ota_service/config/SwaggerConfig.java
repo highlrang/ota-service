@@ -19,7 +19,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("OTA Service API")
-                        .description("Seller API / Customer API 문서")
+                        .description("Extranet API / Customer API 문서")
                         .version("v1"))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_SCHEME, new SecurityScheme()
@@ -31,10 +31,10 @@ public class SwaggerConfig {
     }
 
     @Bean
-    public GroupedOpenApi sellerApi() {
+    public GroupedOpenApi extranetApi() {
         return GroupedOpenApi.builder()
-                .group("Seller API")
-                .pathsToMatch("/api/seller/**")
+                .group("Extranet API")
+                .pathsToMatch("/api/extranet/**")
                 .build();
     }
 

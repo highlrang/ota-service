@@ -1,6 +1,6 @@
 package com.ota_service.ota_service.service;
 
-import com.ota_service.ota_service.dto.seller.accommodation.AddressInfo;
+import com.ota_service.ota_service.dto.extranet.accommodation.AddressInfo;
 import com.ota_service.ota_service.entity.Region;
 import com.ota_service.ota_service.exception.ApiException;
 import com.ota_service.ota_service.exception.ExceptionType;

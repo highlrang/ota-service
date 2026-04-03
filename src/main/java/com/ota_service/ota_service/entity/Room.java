@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -76,6 +77,12 @@ public class Room extends BaseTimeEntity {
     @Column(name = "default_stock", nullable = false)
     private Integer defaultStock;
 
+    @Column(name = "active_yn", nullable = false)
+    private Boolean active;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     public static Room create(
             Long accommodationId,
             String roomCode,
@@ -109,6 +116,8 @@ public class Room extends BaseTimeEntity {
                 .minStayNights(minStayNights)
                 .maxStayNights(maxStayNights)
                 .defaultStock(defaultStock)
+                .active(true)
+                .deletedAt(null)
                 .build();
     }
 
@@ -144,5 +153,17 @@ public class Room extends BaseTimeEntity {
         this.minStayNights = minStayNights;
         this.maxStayNights = maxStayNights;
         this.defaultStock = defaultStock;
+        this.active = true;
+        this.deletedAt = null;
+    }
+
+    public void activate() {
+        this.active = true;
+        this.deletedAt = null;
+    }
+
+    public void deactivate(LocalDateTime deletedAt) {
+        this.active = false;
+        this.deletedAt = deletedAt;
     }
 }

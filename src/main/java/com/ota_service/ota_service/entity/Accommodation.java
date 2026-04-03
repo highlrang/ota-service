@@ -37,11 +37,11 @@ public class Accommodation extends BaseTimeEntity {
     @Column(name = "source_type", nullable = false)
     private AccommodationSourceType sourceType;
 
-    @Column(name = "seller_id")
-    private Long sellerId;
+    @Column(name = "extranet_id")
+    private Long extranetId;
 
-    @Column(name = "external_product_id", length = 100)
-    private String externalProductId;
+    @Column(name = "supplier_product_id", length = 100)
+    private String supplierProductId;
 
     @Column(nullable = false, length = 255)
     private String name;
@@ -80,7 +80,7 @@ public class Accommodation extends BaseTimeEntity {
     private LocalTime checkOutTime;
 
     public static Accommodation createExtranet(
-            Long sellerId,
+            Long extranetId,
             String name,
             AccommodationRegionType regionType,
             AccommodationType accommodationType,
@@ -95,8 +95,8 @@ public class Accommodation extends BaseTimeEntity {
     ) {
         Accommodation accommodation = new Accommodation();
         accommodation.sourceType = AccommodationSourceType.EXTRANET;
-        accommodation.sellerId = sellerId;
-        accommodation.externalProductId = null;
+        accommodation.extranetId = extranetId;
+        accommodation.supplierProductId = null;
         accommodation.name = name;
         accommodation.regionType = regionType;
         accommodation.accommodationType = accommodationType;
@@ -110,6 +110,62 @@ public class Accommodation extends BaseTimeEntity {
         accommodation.checkOutTime = checkOutTime;
         accommodation.code = temporaryCode;
         return accommodation;
+    }
+
+    public static Accommodation createSupplier(
+            String name,
+            AccommodationRegionType regionType,
+            AccommodationType accommodationType,
+            Long regionId,
+            String address,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            String thumbnailImage,
+            LocalTime checkInTime,
+            LocalTime checkOutTime,
+            String temporaryCode
+    ) {
+        Accommodation accommodation = new Accommodation();
+        accommodation.sourceType = AccommodationSourceType.SUPPLIER;
+        accommodation.extranetId = null;
+        accommodation.supplierProductId = null;
+        accommodation.name = name;
+        accommodation.regionType = regionType;
+        accommodation.accommodationType = accommodationType;
+        accommodation.regionId = regionId;
+        accommodation.address = address;
+        accommodation.latitude = latitude;
+        accommodation.longitude = longitude;
+        accommodation.thumbnailImage = thumbnailImage;
+        accommodation.businessStatus = BusinessStatus.OPEN;
+        accommodation.checkInTime = checkInTime;
+        accommodation.checkOutTime = checkOutTime;
+        accommodation.code = temporaryCode;
+        return accommodation;
+    }
+
+    public void updateSupplier(
+            String name,
+            AccommodationRegionType regionType,
+            AccommodationType accommodationType,
+            Long regionId,
+            String address,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            String thumbnailImage,
+            LocalTime checkInTime,
+            LocalTime checkOutTime
+    ) {
+        this.name = name;
+        this.regionType = regionType;
+        this.accommodationType = accommodationType;
+        this.regionId = regionId;
+        this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.thumbnailImage = thumbnailImage;
+        this.checkInTime = checkInTime;
+        this.checkOutTime = checkOutTime;
     }
 
     public void updateExtranet(

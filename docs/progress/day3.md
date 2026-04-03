@@ -38,5 +38,16 @@ Extranet과 Supplier 도메인에 대한 API를 개발한다.
 
 #### Supplier
 1. Supplier 상품 연동
-   - Webhook
-   - Scheduler
+   - Supplier가 제공하는 Webhook 방식으로 상품 DB를 동기화한다
+     - Webhook Event Type
+       - event_type이 contents_updated면 Onda API 호출을 통해 최신 데이터를 반영한다
+       - event_type이 status_updated, inventory_updated면 수신된 payload 기반으로 반영한다
+       
+     - 통합 DB 동기화 및 데이터 매핑 기준
+       - Supplier를 통해 들어온 DB는 최신 데이터를 기준으로 통합 Accommodation DB도 갱신하고, 별도의 Supplier DB에 별도 원본 데이터를 관리한다
+       - Webhook으로 수신된 Supplier DB가 Extranet에서 먼저 등록된 상품일 경우 통합 DB에 Insert가 아닌 FK 매핑만 한다
+         - Extranet 서비스 일관성을 위해 Extranet으로 먼저 등록된 DB는 보존하기 위함이다
+         - 상품 DB 중복은 name + address로 판단한다
+       
+2. TODO 
+   - Supplier가 제공하는 상품 관련 API를 주기적으로 호출하여 데이터 동기화 정확도를 높인다
