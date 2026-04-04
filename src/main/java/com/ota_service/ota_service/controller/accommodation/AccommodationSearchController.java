@@ -1,10 +1,12 @@
 package com.ota_service.ota_service.controller.accommodation;
 
 import com.ota_service.ota_service.common.ApiResponse;
-import com.ota_service.ota_service.dto.customer.accommodation.CustomerAccommodationDetailRequest;
-import com.ota_service.ota_service.dto.customer.accommodation.CustomerAccommodationDetailResponse;
+import com.ota_service.ota_service.dto.accommodation.popular.PopularAccommodationRequest;
+import com.ota_service.ota_service.dto.accommodation.popular.PopularAccommodationResponse;
 import com.ota_service.ota_service.dto.accommodation.search.SearchAccommodationPageResponse;
 import com.ota_service.ota_service.dto.accommodation.search.SearchAccommodationRequest;
+import com.ota_service.ota_service.dto.customer.accommodation.CustomerAccommodationDetailRequest;
+import com.ota_service.ota_service.dto.customer.accommodation.CustomerAccommodationDetailResponse;
 import com.ota_service.ota_service.service.AccommodationSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,17 +33,25 @@ public class AccommodationSearchController {
     @Operation(summary = "숙소 검색", description = "통합 Accommodation 기준으로 지역, 숙소 타입, 침구 타입, 날짜, 인원, 요금 조건을 반영해 페이징 조회합니다.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<SearchAccommodationPageResponse>> search(
-            @Valid @ModelAttribute SearchAccommodationRequest request,
+            @ParameterObject @Valid @ModelAttribute SearchAccommodationRequest request,
             @ParameterObject @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(ApiResponse.success(accommodationSearchService.search(request, pageable)));
+    }
+
+    @Operation(summary = "인기 숙소 목록 조회", description = "예약 이력 기준 인기 숙소 목록을 숙소 타입별로 캐시 조회합니다.")
+    @GetMapping("/popular")
+    public ResponseEntity<ApiResponse<java.util.List<PopularAccommodationResponse>>> getPopularAccommodations(
+            @ParameterObject @Valid @ModelAttribute PopularAccommodationRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(accommodationSearchService.getPopularAccommodations(request)));
     }
 
     @Operation(summary = "숙소 상세 조회", description = "고객이 선택한 숙소의 상세 정보와 예약 단위 객실 목록을 조회합니다.")
     @GetMapping("/{accommodationCode}")
     public ResponseEntity<ApiResponse<CustomerAccommodationDetailResponse>> getAccommodationDetail(
             @PathVariable String accommodationCode,
-            @Valid @ModelAttribute CustomerAccommodationDetailRequest request
+            @ParameterObject @Valid @ModelAttribute CustomerAccommodationDetailRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 accommodationSearchService.getAccommodationDetail(accommodationCode, request)

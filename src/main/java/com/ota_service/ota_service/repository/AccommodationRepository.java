@@ -133,4 +133,33 @@ public interface AccommodationRepository extends JpaRepository<Accommodation, Lo
             @Param("excludeSoldOut") boolean excludeSoldOut,
             Pageable pageable
     );
+
+    @Query(
+            value = """
+                    SELECT a.*
+                    FROM ACCOMMODATIONS a
+                    LEFT JOIN RESERVATIONS rsv
+                        ON rsv.accommodation_id = a.id
+                       AND rsv.reservation_status IN ('CONFIRMED', 'COMPLETED')
+                    WHERE a.business_status = 'OPEN'
+                      AND (:accommodationType IS NULL OR a.accommodation_type = :accommodationType)
+                      AND EXISTS (
+                          SELECT 1
+                          FROM ROOMS r
+                          JOIN ROOM_RATES rr ON rr.room_id = r.id
+                          WHERE r.accommodation_id = a.id
+                            AND r.active_yn = TRUE
+                            AND rr.active_yn = TRUE
+                            AND rr.rate_date >= :baseDate
+                      )
+                    GROUP BY a.id
+                    ORDER BY COUNT(rsv.id) DESC, a.id DESC
+                    LIMIT 20
+                    """,
+            nativeQuery = true
+    )
+    java.util.List<Accommodation> findPopularAccommodations(
+            @Param("accommodationType") String accommodationType,
+            @Param("baseDate") java.time.LocalDate baseDate
+    );
 }

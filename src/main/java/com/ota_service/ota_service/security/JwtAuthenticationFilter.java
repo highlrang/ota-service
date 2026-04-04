@@ -91,6 +91,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPublicRequest(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
+
         return PUBLIC_URIS.contains(requestUri)
                 || isPublicCustomerGetRequest(request)
                 || requestUri.startsWith("/swagger-ui/")
@@ -98,8 +99,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isOptionalAuthenticatedRequest(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
         return "POST".equalsIgnoreCase(request.getMethod())
-                && OPTIONAL_AUTH_CUSTOMER_POST_URIS.contains(request.getRequestURI());
+                && StringUtils.hasText(requestUri)
+                && OPTIONAL_AUTH_CUSTOMER_POST_URIS.contains(requestUri);
     }
 
     private boolean isPublicCustomerGetRequest(HttpServletRequest request) {
@@ -108,6 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String requestUri = request.getRequestURI();
+
         return PUBLIC_CUSTOMER_GET_PREFIXES.stream().anyMatch(requestUri::startsWith);
     }
 
@@ -128,7 +132,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         AuthenticatedAccount account = jwtTokenProvider.getAuthenticatedAccount(token);
-        if (account.accountType() != AccountType.CUSTOMER) {
+        if (account == null || account.accountType() != AccountType.CUSTOMER) {
             writeErrorResponse(response, ExceptionType.ACCESS_DENIED);
             return;
         }
@@ -159,6 +163,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private AccountType getRequiredAccountType(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
+        if (!StringUtils.hasText(requestUri)) {
+            return null;
+        }
         if (requestUri.startsWith("/api/customer/")) {
             return AccountType.CUSTOMER;
         }

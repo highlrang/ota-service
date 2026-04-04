@@ -1,5 +1,7 @@
 package com.ota_service.ota_service.service;
 
+import com.ota_service.ota_service.dto.accommodation.popular.PopularAccommodationRequest;
+import com.ota_service.ota_service.dto.accommodation.popular.PopularAccommodationResponse;
 import com.ota_service.ota_service.dto.accommodation.search.SearchAccommodationItemResponse;
 import com.ota_service.ota_service.dto.accommodation.search.SearchAccommodationPageResponse;
 import com.ota_service.ota_service.dto.accommodation.search.SearchAccommodationRequest;
@@ -36,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheManager = "cacheManager")
 public class AccommodationSearchService {
 
     private final AccommodationRepository accommodationRepository;
@@ -172,6 +177,66 @@ public class AccommodationSearchService {
         );
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = AccommodationCacheNames.POPULAR,
+            key = "#request.accommodationType == null ? 'ALL' : #request.accommodationType.name()"
+    )
+    public List<PopularAccommodationResponse> getPopularAccommodations(PopularAccommodationRequest request) {
+        LocalDate baseDate = LocalDate.now();
+
+        List<Accommodation> accommodations = accommodationRepository.findPopularAccommodations(
+                request.getAccommodationType() == null ? null : request.getAccommodationType().name(),
+                baseDate
+        );
+        if (accommodations.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Region> regionMap = new LinkedHashMap<>();
+        regionRepository.findAllById(accommodations.stream().map(Accommodation::getRegionId).distinct().toList())
+                .forEach(region -> regionMap.put(region.getId(), region));
+
+        List<Long> accommodationIds = accommodations.stream().map(Accommodation::getId).toList();
+        List<Room> rooms = roomRepository.findAllByAccommodationIdInAndActiveTrueOrderByAccommodationIdAscIdAsc(accommodationIds);
+        Map<Long, List<Room>> roomMap = rooms.stream()
+                .collect(java.util.stream.Collectors.groupingBy(Room::getAccommodationId, LinkedHashMap::new, java.util.stream.Collectors.toList()));
+
+        List<Long> roomIds = rooms.stream().map(Room::getId).toList();
+        Map<Long, List<RoomRate>> roomRateMap = roomIds.isEmpty()
+                ? Map.of()
+                : roomRateRepository.findAllByRoomIdInAndActiveTrueAndRateDateGreaterThanEqualOrderByRoomIdAscRateDateAsc(
+                        roomIds,
+                        baseDate
+                ).stream()
+                .collect(java.util.stream.Collectors.groupingBy(RoomRate::getRoomId, LinkedHashMap::new, java.util.stream.Collectors.toList()));
+
+        List<PopularAccommodationResponse> responses = new ArrayList<>();
+        for (Accommodation accommodation : accommodations) {
+            DisplayPriceSummary displayPrice = resolveDisplayPrice(
+                    roomMap.getOrDefault(accommodation.getId(), List.of()),
+                    roomRateMap
+            );
+            if (displayPrice == null) {
+                continue;
+            }
+
+            Region region = regionMap.get(accommodation.getRegionId());
+            responses.add(new PopularAccommodationResponse(
+                    accommodation.getCode(),
+                    accommodation.getName(),
+                    accommodation.getAccommodationType().name(),
+                    region == null ? null : region.getCode(),
+                    region == null ? null : region.getFullName(),
+                    accommodation.getAddress(),
+                    accommodation.getThumbnailImage(),
+                    displayPrice.amount(),
+                    displayPrice.currency()
+            ));
+        }
+        return responses;
+    }
+
     private void validateRequest(SearchAccommodationRequest request) {
         validateStayPeriod(request.getStayStartDate(), request.getStayEndDate());
         if (request.getMinTotalAmount() != null && request.getMaxTotalAmount() != null
@@ -199,6 +264,20 @@ public class AccommodationSearchService {
         return regionRepository.findByCode(regionCode)
                 .map(Region::getId)
                 .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "존재하지 않는 지역 코드입니다."));
+    }
+
+    private DisplayPriceSummary resolveDisplayPrice(
+            List<Room> rooms,
+            Map<Long, List<RoomRate>> roomRateMap
+    ) {
+        RoomRate minRate = rooms.stream()
+                .flatMap(room -> roomRateMap.getOrDefault(room.getId(), List.of()).stream())
+                .min(Comparator.comparing(RoomRate::getSalePrice))
+                .orElse(null);
+        if (minRate == null) {
+            return null;
+        }
+        return new DisplayPriceSummary(minRate.getSalePrice(), minRate.getCurrency());
     }
 
     private List<SearchAccommodationItemResponse> buildContent(
@@ -372,6 +451,12 @@ public class AccommodationSearchService {
             String currency,
             Integer maxOccupancy,
             boolean soldOut
+    ) {
+    }
+
+    private record DisplayPriceSummary(
+            BigDecimal amount,
+            String currency
     ) {
     }
 }

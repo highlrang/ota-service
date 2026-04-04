@@ -17,6 +17,13 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
 jwt:
   secret: ota-service-demo-secret-key-for-jwt-signing
   access-token-expiration-seconds: 3600

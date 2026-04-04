@@ -67,7 +67,7 @@ public class CustomerReservationService {
         validateRoomRates(request.checkInDate(), request.checkOutDate(), roomRates);
         validatePaymentAmount(request.paymentAmount(), roomRates);
 
-        List<RoomInventory> inventories = roomInventoryRepository.findAllByRoomIdAndInventoryDateBetweenAndActiveTrueOrderByInventoryDateAsc(
+        List<RoomInventory> inventories = roomInventoryRepository.findAllByRoomIdAndInventoryDateBetweenAndActiveTrueForUpdate(
                 room.getId(),
                 request.checkInDate(),
                 stayEndDate

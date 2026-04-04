@@ -44,20 +44,25 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(requestWrapper, responseWrapper);
         } finally {
-            long duration = System.currentTimeMillis() - startedAt;
-            String requestBody = extractRequestBody(requestWrapper);
-            String responseBody = extractResponseBody(responseWrapper);
-            log.info(
-                    "HTTP {} {} status={} durationMs={} requestBody={} responseBody={}",
-                    requestWrapper.getMethod(),
-                    requestWrapper.getRequestURI(),
-                    responseWrapper.getStatus(),
-                    duration,
-                    requestBody,
-                    responseBody
-            );
-            responseWrapper.copyBodyToResponse();
-            MDC.clear();
+            try {
+                long duration = System.currentTimeMillis() - startedAt;
+                String requestBody = extractRequestBody(requestWrapper);
+                String responseBody = extractResponseBody(responseWrapper);
+                log.info(
+                        "HTTP {} {} status={} durationMs={} requestBody={} responseBody={}",
+                        requestWrapper.getMethod(),
+                        requestWrapper.getRequestURI(),
+                        responseWrapper.getStatus(),
+                        duration,
+                        requestBody,
+                        responseBody
+                );
+            } catch (Exception loggingException) {
+                log.warn("Failed to write HTTP request log", loggingException);
+            } finally {
+                responseWrapper.copyBodyToResponse();
+                MDC.clear();
+            }
         }
     }
 
@@ -80,7 +85,7 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
             return "[omitted]";
         }
         byte[] body = requestWrapper.getContentAsByteArray();
-        if (body.length == 0) {
+        if (body == null || body.length == 0) {
             return "[empty]";
         }
         return sanitizeAndTrim(toBodyString(body, requestWrapper.getCharacterEncoding()));
@@ -91,7 +96,7 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
             return "[omitted]";
         }
         byte[] body = responseWrapper.getContentAsByteArray();
-        if (body.length == 0) {
+        if (body == null || body.length == 0) {
             return "[empty]";
         }
         return sanitizeAndTrim(toBodyString(body, responseWrapper.getCharacterEncoding()));
@@ -109,6 +114,9 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
     }
 
     private String toBodyString(byte[] body, String characterEncoding) {
+        if (body == null || body.length == 0) {
+            return "";
+        }
         Charset charset = StandardCharsets.UTF_8;
         if (StringUtils.hasText(characterEncoding)) {
             try {

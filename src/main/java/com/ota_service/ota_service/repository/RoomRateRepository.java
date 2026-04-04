@@ -20,5 +20,10 @@ public interface RoomRateRepository extends JpaRepository<RoomRate, Long> {
             LocalDate endDate
     );
 
+    List<RoomRate> findAllByRoomIdInAndActiveTrueAndRateDateGreaterThanEqualOrderByRoomIdAscRateDateAsc(
+            List<Long> roomIds,
+            LocalDate baseDate
+    );
+
     Optional<RoomRate> findByRoomIdAndRateDateAndActiveTrue(Long roomId, LocalDate rateDate);
 }

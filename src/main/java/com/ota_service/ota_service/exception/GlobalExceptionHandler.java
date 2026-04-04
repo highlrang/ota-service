@@ -1,9 +1,12 @@
 package com.ota_service.ota_service.exception;
 
 import com.ota_service.ota_service.common.ApiResponse;
+import jakarta.persistence.LockTimeoutException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,6 +36,18 @@ public class GlobalExceptionHandler {
         ExceptionType exceptionType = ExceptionType.INVALID_INPUT;
         return ResponseEntity.status(exceptionType.status())
                 .body(ApiResponse.failure(exceptionType.code(), exceptionType.message(), errors));
+    }
+
+    @ExceptionHandler({
+            PessimisticLockingFailureException.class,
+            CannotAcquireLockException.class,
+            LockTimeoutException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleLockException(Exception exception) {
+        log.warn("Lock acquisition failed", exception);
+        ExceptionType exceptionType = ExceptionType.RESOURCE_BUSY;
+        return ResponseEntity.status(exceptionType.status())
+                .body(ApiResponse.failure(exceptionType.code(), exceptionType.message(), null));
     }
 
     @ExceptionHandler(Exception.class)
