@@ -53,13 +53,7 @@ public class ExtranetAuthService {
         extranet.setRefreshTokenExpiredAt(LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenExpirationSeconds()));
         extranet.setLastLoginAt(LocalDateTime.now());
 
-        return new LoginResponse(
-                extranet.getEmail(),
-                extranet.getCode(),
-                extranet.getName(),
-                accessToken,
-                refreshToken
-        );
+        return LoginResponse.fromExtranet(extranet, accessToken, refreshToken);
     }
 
     private void validateActiveExtranet(Extranet extranet) {

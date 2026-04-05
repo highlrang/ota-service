@@ -86,15 +86,6 @@ VALUES
     (5, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-20'),
     (6, 3, '오션 패키지', 450000.00, 'KRW', 420000.00, TRUE, '2026-04-21');
 
-INSERT INTO EXTRANET_ROOM_RATES (
-    id, room_id, room_rate_id, rate_name, base_price, currency, sale_price, refundable_yn, rate_date, active_yn, deleted_at
-)
-VALUES
-    (1, 1, 1, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-10', TRUE, NULL),
-    (2, 1, 2, '스탠다드 요금', 150000.00, 'KRW', 135000.00, TRUE, '2026-04-11', TRUE, NULL),
-    (3, 2, 3, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-10', TRUE, NULL),
-    (4, 2, 4, '디럭스 특가', 220000.00, 'KRW', 198000.00, FALSE, '2026-04-11', TRUE, NULL);
-
 INSERT INTO SUPPLIER_ACCOMMODATIONS (
     id, source, supplier_property_id, accommodation_id, status, last_synced_at
 )
@@ -133,26 +124,26 @@ VALUES
 
 INSERT INTO RESERVATIONS (
     id, user_id, accommodation_id, room_id, room_rate_id, reservation_no,
-    check_in_date, check_out_date, guest_name, guest_phone_number,
+    check_in_at, check_out_at, guest_name, guest_phone_number,
     adult_count, child_count, total_amount, reservation_status,
     requested_at, confirmed_at, cancelled_at, failed_at
 )
 VALUES
     (
         1, 1, 1, 1, 1, 'RSV-20260401-0001',
-        '2026-04-10', '2026-04-12', '김여행', '010-1111-2222',
+        '2026-04-10 15:00:00', '2026-04-12 11:00:00', '김여행', '010-1111-2222',
         2, 0, 270000.00, 'CONFIRMED',
         '2026-04-01 09:00:00', '2026-04-01 09:01:00', NULL, NULL
     ),
     (
         2, 2, 2, 3, 5, 'RSV-20260401-0002',
-        '2026-04-20', '2026-04-22', '박숙박', '010-3333-4444',
+        '2026-04-20 16:00:00', '2026-04-22 11:00:00', '박숙박', '010-3333-4444',
         2, 1, 840000.00, 'CANCELLED',
         '2026-04-01 10:00:00', '2026-04-01 10:01:00', '2026-04-02 08:00:00', NULL
     ),
     (
         3, 2, 1, 2, 3, 'RSV-20260315-0003',
-        '2026-03-20', '2026-03-22', '박숙박', '010-3333-4444',
+        '2026-03-20 15:00:00', '2026-03-22 11:00:00', '박숙박', '010-3333-4444',
         2, 0, 396000.00, 'COMPLETED',
         '2026-03-15 14:00:00', '2026-03-15 14:01:00', NULL, NULL
     );

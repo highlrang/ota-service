@@ -1,6 +1,5 @@
 package com.ota_service.ota_service.dto.extranet.room;
 
-import com.ota_service.ota_service.entity.ExtranetRoomRate;
 import com.ota_service.ota_service.entity.RoomRate;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
@@ -34,14 +33,4 @@ public record ExtranetRoomRateResponse(
                 .build();
     }
 
-    public static ExtranetRoomRateResponse from(ExtranetRoomRate roomRate) {
-        return ExtranetRoomRateResponse.builder()
-                .rateName(roomRate.getRateName())
-                .basePrice(roomRate.getBasePrice())
-                .currency(roomRate.getCurrency())
-                .salePrice(roomRate.getSalePrice())
-                .refundable(roomRate.getRefundable())
-                .rateDate(roomRate.getRateDate())
-                .build();
-    }
 }

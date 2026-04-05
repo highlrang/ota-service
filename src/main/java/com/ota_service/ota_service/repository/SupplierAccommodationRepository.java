@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SupplierAccommodationRepository extends JpaRepository<SupplierAccommodation, Long> {
 
     Optional<SupplierAccommodation> findBySourceAndSupplierPropertyId(SupplierSourceType source, String supplierPropertyId);
+
+    Optional<SupplierAccommodation> findBySourceAndAccommodationId(SupplierSourceType source, Long accommodationId);
 }

@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RoomRateRepository extends JpaRepository<RoomRate, Long> {
 
+    List<RoomRate> findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(List<Long> roomIds);
+
     List<RoomRate> findAllByRoomIdInAndActiveTrueAndRateDateBetweenOrderByRoomIdAscRateDateAsc(
             List<Long> roomIds,
             LocalDate startDate,

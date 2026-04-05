@@ -1,6 +1,5 @@
-# Extranet Extranet API
+# Extranet API
 
-Extranet Extranet API를 Postman 또는 Swagger에서 테스트하는 순서 기준으로 정리했다.  
 모든 판매자 전용 API는 `Authorization: Bearer {accessToken}` 헤더가 필요하다.
 
 ## 1. 판매자 로그인
@@ -568,6 +567,66 @@ response example
         "stopSale": true
       }
     ]
+  }
+}
+```
+
+## 13. 예약 조회 목록
+
+- 설명: 판매자가 본인 숙소의 예약 내역을 조건별로 페이징 조회한다.
+- 경로: `GET /api/extranet/reservations`
+
+request example
+```text
+GET /api/extranet/reservations?accommodationCode=ACC-000001&status=CONFIRMED&checkInDateFrom=2026-04-01&checkInDateTo=2026-04-30&page=0&size=20
+Authorization: Bearer {accessToken}
+```
+
+response example
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": null,
+  "data": {
+    "content": [
+      {
+        "reservationNo": "RSV-20260405-0001",
+        "accommodationCode": "ACC-000001",
+        "accommodationName": "강남 시티 호텔",
+        "roomCode": "ROOM-SEOUL-0001",
+        "roomName": "스탠다드 더블",
+        "guestName": "김여행",
+        "guestPhoneNumber": "010-1234-5678",
+        "reservationStatus": "CONFIRMED",
+        "paymentStatus": "PAID",
+        "checkInAt": "2026-04-10 15:00",
+        "checkOutAt": "2026-04-12 11:00",
+        "totalAmount": 270000.00,
+        "reservedAt": "2026-04-05 13:20:11"
+      },
+      {
+        "reservationNo": "RSV-20260405-0002",
+        "accommodationCode": "ACC-000001",
+        "accommodationName": "강남 시티 호텔",
+        "roomCode": "ROOM-SEOUL-0002",
+        "roomName": "디럭스 트윈",
+        "guestName": "박여행",
+        "guestPhoneNumber": "010-2222-3333",
+        "reservationStatus": "CONFIRMED",
+        "paymentStatus": "PAID",
+        "checkInAt": "2026-04-18 15:00",
+        "checkOutAt": "2026-04-19 11:00",
+        "totalAmount": 198000.00,
+        "reservedAt": "2026-04-05 14:05:42"
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 2,
+    "totalPages": 1,
+    "first": true,
+    "last": true
   }
 }
 ```

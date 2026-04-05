@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SupplierRoomRepository extends JpaRepository<SupplierRoom, Long> {
 
     Optional<SupplierRoom> findBySourceAndSupplierRoomtypeId(SupplierSourceType source, String supplierRoomtypeId);
+
+    Optional<SupplierRoom> findBySourceAndRoomId(SupplierSourceType source, Long roomId);
 }

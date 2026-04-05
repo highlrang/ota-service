@@ -12,7 +12,6 @@ import com.ota_service.ota_service.dto.extranet.room.ExtranetRoomDetailViewRespo
 import com.ota_service.ota_service.dto.extranet.room.ExtranetRoomImageResponse;
 import com.ota_service.ota_service.dto.extranet.room.ExtranetRoomInventoryResponse;
 import com.ota_service.ota_service.dto.extranet.room.ExtranetRoomRateResponse;
-import com.ota_service.ota_service.entity.ExtranetRoomRate;
 import com.ota_service.ota_service.entity.Room;
 import com.ota_service.ota_service.entity.RoomImage;
 import com.ota_service.ota_service.entity.RoomInventory;
@@ -22,7 +21,6 @@ import com.ota_service.ota_service.enums.ImageType;
 import com.ota_service.ota_service.exception.ApiException;
 import com.ota_service.ota_service.exception.ExceptionType;
 import com.ota_service.ota_service.repository.ExtranetAccommodationRepository;
-import com.ota_service.ota_service.repository.ExtranetRoomRateRepository;
 import com.ota_service.ota_service.repository.RoomImageRepository;
 import com.ota_service.ota_service.repository.RoomInventoryRepository;
 import com.ota_service.ota_service.repository.RoomRateRepository;
@@ -61,7 +59,6 @@ public class ExtranetRoomService {
     private final RoomImageRepository roomImageRepository;
     private final RoomInventoryRepository roomInventoryRepository;
     private final RoomRateRepository roomRateRepository;
-    private final ExtranetRoomRateRepository extranetRoomRateRepository;
     private final CodeGenerator codeGenerator;
     private final FileStorageProperties fileStorageProperties;
 
@@ -76,7 +73,7 @@ public class ExtranetRoomService {
 
         List<Long> roomIds = List.of(room.getId());
         List<RoomImage> roomImages = roomImageRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscSortOrderAsc(roomIds);
-        List<ExtranetRoomRate> roomRates = extranetRoomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(roomIds);
+        List<RoomRate> roomRates = roomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(roomIds);
         List<RoomInventory> roomInventories = roomInventoryRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscInventoryDateAsc(roomIds);
 
         return ExtranetRoomDetailResponse.of(
@@ -122,7 +119,7 @@ public class ExtranetRoomService {
 
         List<CreateExtranetRoomRateRequest> rates = request.rates() == null ? Collections.emptyList() : request.rates();
 
-        List<ExtranetRoomRate> savedRates = createExtranetRates(savedRoomId, rates);
+        List<RoomRate> savedRates = createExtranetRates(savedRoomId, rates);
 
         return CreateExtranetRoomResponse.of(
                 savedRoom,
@@ -231,23 +228,13 @@ public class ExtranetRoomService {
         );
     }
 
-    private List<ExtranetRoomRate> createExtranetRates(Long roomId, List<CreateExtranetRoomRateRequest> requests) {
-        List<ExtranetRoomRate> savedRates = new ArrayList<>();
+    private List<RoomRate> createExtranetRates(Long roomId, List<CreateExtranetRoomRateRequest> requests) {
+        List<RoomRate> savedRates = new ArrayList<>();
         for (CreateExtranetRoomRateRequest request : requests) {
             LocalDate date = request.validFrom();
             while (!date.isAfter(request.validTo())) {
-                RoomRate canonicalRate = roomRateRepository.save(RoomRate.create(
+                savedRates.add(roomRateRepository.save(RoomRate.create(
                         roomId,
-                        request.rateName(),
-                        request.basePrice(),
-                        request.currency(),
-                        request.salePrice(),
-                        request.refundable(),
-                        date
-                ));
-                savedRates.add(extranetRoomRateRepository.save(ExtranetRoomRate.create(
-                        roomId,
-                        canonicalRate.getId(),
                         request.rateName(),
                         request.basePrice(),
                         request.currency(),

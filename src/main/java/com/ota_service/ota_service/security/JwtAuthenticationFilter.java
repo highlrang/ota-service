@@ -34,7 +34,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Set<String> PUBLIC_CUSTOMER_GET_PREFIXES = Set.of(
             "/api/customer/accommodations"
     );
-    private static final Set<String> OPTIONAL_AUTH_CUSTOMER_POST_URIS = Set.of(
+    private static final Set<String> OPTIONAL_AUTH_CUSTOMER_POST_PREFIXES = Set.of(
+            "/api/customer/reservations"
+    );
+    private static final Set<String> OPTIONAL_AUTH_CUSTOMER_GET_PREFIXES = Set.of(
             "/api/customer/reservations"
     );
 
@@ -100,9 +103,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isOptionalAuthenticatedRequest(HttpServletRequest request) {
         String requestUri = request.getRequestURI();
-        return "POST".equalsIgnoreCase(request.getMethod())
-                && StringUtils.hasText(requestUri)
-                && OPTIONAL_AUTH_CUSTOMER_POST_URIS.contains(requestUri);
+        if (!StringUtils.hasText(requestUri)) {
+            return false;
+        }
+
+        return ("POST".equalsIgnoreCase(request.getMethod())
+                && OPTIONAL_AUTH_CUSTOMER_POST_PREFIXES.stream().anyMatch(requestUri::startsWith))
+                || ("GET".equalsIgnoreCase(request.getMethod())
+                && OPTIONAL_AUTH_CUSTOMER_GET_PREFIXES.stream().anyMatch(requestUri::startsWith));
     }
 
     private boolean isPublicCustomerGetRequest(HttpServletRequest request) {

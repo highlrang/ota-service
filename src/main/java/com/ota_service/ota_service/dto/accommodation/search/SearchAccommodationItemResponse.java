@@ -1,10 +1,15 @@
 package com.ota_service.ota_service.dto.accommodation.search;
 
+import com.ota_service.ota_service.entity.Accommodation;
+import com.ota_service.ota_service.entity.Region;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import lombok.AccessLevel;
+import lombok.Builder;
 
+@Builder(access = AccessLevel.PRIVATE)
 public record SearchAccommodationItemResponse(
         @Schema(example = "ACC-000001")
         String accommodationCode,
@@ -51,4 +56,34 @@ public record SearchAccommodationItemResponse(
         @Schema(example = "false")
         boolean soldOut
 ) {
+    public static SearchAccommodationItemResponse of(
+            Accommodation accommodation,
+            Region region,
+            LocalDate stayStartDate,
+            LocalDate stayEndDate,
+            BigDecimal minTotalAmount,
+            String currency,
+            Integer availableRoomCount,
+            Integer maxGuestCount,
+            boolean soldOut
+    ) {
+        return SearchAccommodationItemResponse.builder()
+                .accommodationCode(accommodation.getCode())
+                .name(accommodation.getName())
+                .accommodationType(accommodation.getAccommodationType().name())
+                .regionCode(region == null ? null : region.getCode())
+                .regionName(region == null ? null : region.getFullName())
+                .address(accommodation.getAddress())
+                .thumbnailImage(accommodation.getThumbnailImage())
+                .checkInTime(accommodation.getCheckInTime())
+                .checkOutTime(accommodation.getCheckOutTime())
+                .stayStartDate(stayStartDate)
+                .stayEndDate(stayEndDate)
+                .minTotalAmount(minTotalAmount)
+                .currency(currency)
+                .availableRoomCount(availableRoomCount)
+                .maxGuestCount(maxGuestCount)
+                .soldOut(soldOut)
+                .build();
+    }
 }

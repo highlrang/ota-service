@@ -35,4 +35,24 @@ public class Refund extends BaseTimeEntity {
 
     @Column(name = "refunded_at")
     private LocalDateTime refundedAt;
+
+    public static Refund create(
+            Long paymentId,
+            String refundNo,
+            BigDecimal refundAmount,
+            String refundReason,
+            LocalDateTime refundedAt
+    ) {
+        Refund refund = new Refund();
+        refund.paymentId = paymentId;
+        refund.refundNo = refundNo;
+        refund.refundAmount = refundAmount;
+        refund.refundReason = refundReason;
+        refund.refundedAt = refundedAt;
+        return refund;
+    }
+
+    public void changeRefundNo(String refundNo) {
+        this.refundNo = refundNo;
+    }
 }

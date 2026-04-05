@@ -1,8 +1,13 @@
 package com.ota_service.ota_service.dto.accommodation.popular;
 
+import com.ota_service.ota_service.entity.Accommodation;
+import com.ota_service.ota_service.entity.Region;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import lombok.AccessLevel;
+import lombok.Builder;
 
+@Builder(access = AccessLevel.PRIVATE)
 public record PopularAccommodationResponse(
         @Schema(example = "ACC-000001")
         String accommodationCode,
@@ -31,4 +36,22 @@ public record PopularAccommodationResponse(
         @Schema(example = "KRW")
         String currency
 ) {
+    public static PopularAccommodationResponse of(
+            Accommodation accommodation,
+            Region region,
+            BigDecimal displayPrice,
+            String currency
+    ) {
+        return PopularAccommodationResponse.builder()
+                .accommodationCode(accommodation.getCode())
+                .name(accommodation.getName())
+                .accommodationType(accommodation.getAccommodationType().name())
+                .regionCode(region == null ? null : region.getCode())
+                .regionName(region == null ? null : region.getFullName())
+                .address(accommodation.getAddress())
+                .thumbnailImage(accommodation.getThumbnailImage())
+                .displayPrice(displayPrice)
+                .currency(currency)
+                .build();
+    }
 }

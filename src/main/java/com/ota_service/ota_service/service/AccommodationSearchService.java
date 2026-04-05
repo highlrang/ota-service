@@ -91,15 +91,7 @@ public class AccommodationSearchService {
                 stayNights,
                 excludeSoldOut
         );
-        return new SearchAccommodationPageResponse(
-                content,
-                page.getNumber(),
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                page.isFirst(),
-                page.isLast()
-        );
+        return SearchAccommodationPageResponse.from(page, content);
     }
 
     @Transactional(readOnly = true)
@@ -222,14 +214,9 @@ public class AccommodationSearchService {
             }
 
             Region region = regionMap.get(accommodation.getRegionId());
-            responses.add(new PopularAccommodationResponse(
-                    accommodation.getCode(),
-                    accommodation.getName(),
-                    accommodation.getAccommodationType().name(),
-                    region == null ? null : region.getCode(),
-                    region == null ? null : region.getFullName(),
-                    accommodation.getAddress(),
-                    accommodation.getThumbnailImage(),
+            responses.add(PopularAccommodationResponse.of(
+                    accommodation,
+                    region,
                     displayPrice.amount(),
                     displayPrice.currency()
             ));
@@ -344,16 +331,9 @@ public class AccommodationSearchService {
                     .orElseThrow();
             Region region = regionMap.get(accommodation.getRegionId());
 
-            responses.add(new SearchAccommodationItemResponse(
-                    accommodation.getCode(),
-                    accommodation.getName(),
-                    accommodation.getAccommodationType().name(),
-                    region == null ? null : region.getCode(),
-                    region == null ? null : region.getFullName(),
-                    accommodation.getAddress(),
-                    accommodation.getThumbnailImage(),
-                    accommodation.getCheckInTime(),
-                    accommodation.getCheckOutTime(),
+            responses.add(SearchAccommodationItemResponse.of(
+                    accommodation,
+                    region,
                     request.getStayStartDate(),
                     request.getStayEndDate(),
                     cheapest.totalAmount(),

@@ -10,7 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -43,11 +42,14 @@ public class Reservation extends BaseTimeEntity {
     @Column(name = "reservation_no", nullable = false, unique = true, length = 100)
     private String reservationNo;
 
-    @Column(name = "check_in_date", nullable = false)
-    private LocalDate checkInDate;
+    @Column(name = "supplier_booking_number", length = 100)
+    private String supplierBookingNumber;
 
-    @Column(name = "check_out_date", nullable = false)
-    private LocalDate checkOutDate;
+    @Column(name = "check_in_at", nullable = false)
+    private LocalDateTime checkInAt;
+
+    @Column(name = "check_out_at", nullable = false)
+    private LocalDateTime checkOutAt;
 
     @Column(name = "guest_name", nullable = false, length = 100)
     private String guestName;
@@ -86,8 +88,8 @@ public class Reservation extends BaseTimeEntity {
             Long roomId,
             Long roomRateId,
             String reservationNo,
-            LocalDate checkInDate,
-            LocalDate checkOutDate,
+            LocalDateTime checkInAt,
+            LocalDateTime checkOutAt,
             String guestName,
             String guestPhoneNumber,
             Integer adultCount,
@@ -101,8 +103,8 @@ public class Reservation extends BaseTimeEntity {
         reservation.roomId = roomId;
         reservation.roomRateId = roomRateId;
         reservation.reservationNo = reservationNo;
-        reservation.checkInDate = checkInDate;
-        reservation.checkOutDate = checkOutDate;
+        reservation.checkInAt = checkInAt;
+        reservation.checkOutAt = checkOutAt;
         reservation.guestName = guestName;
         reservation.guestPhoneNumber = guestPhoneNumber;
         reservation.adultCount = adultCount;
@@ -116,5 +118,9 @@ public class Reservation extends BaseTimeEntity {
 
     public void changeReservationNo(String reservationNo) {
         this.reservationNo = reservationNo;
+    }
+
+    public void changeSupplierBookingNumber(String supplierBookingNumber) {
+        this.supplierBookingNumber = supplierBookingNumber;
     }
 }

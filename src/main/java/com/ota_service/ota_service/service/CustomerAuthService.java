@@ -53,13 +53,7 @@ public class CustomerAuthService {
         user.setRefreshTokenExpiredAt(LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenExpirationSeconds()));
         user.setLastLoginAt(LocalDateTime.now());
 
-        return new LoginResponse(
-                user.getEmail(),
-                user.getCode(),
-                user.getName(),
-                accessToken,
-                refreshToken
-        );
+        return LoginResponse.fromCustomer(user, accessToken, refreshToken);
     }
 
     private void validateActiveUser(User user) {

@@ -33,4 +33,8 @@ public class CodeGenerator {
     public String generatePaymentCode(LocalDate paymentDate, Long sequence) {
         return "PAY-" + paymentDate.format(RESERVATION_DATE_FORMAT) + "-" + String.format("%04d", sequence);
     }
+
+    public String generateRefundCode(LocalDate refundDate, Long sequence) {
+        return "RFD-" + refundDate.format(RESERVATION_DATE_FORMAT) + "-" + String.format("%04d", sequence);
+    }
 }

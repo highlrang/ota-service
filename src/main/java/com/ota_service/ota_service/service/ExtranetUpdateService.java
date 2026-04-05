@@ -18,7 +18,6 @@ import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomRatesResp
 import com.ota_service.ota_service.dto.extranet.room.UpdateExtranetRoomRequest;
 import com.ota_service.ota_service.entity.Accommodation;
 import com.ota_service.ota_service.entity.AccommodationDetail;
-import com.ota_service.ota_service.entity.ExtranetRoomRate;
 import com.ota_service.ota_service.entity.Region;
 import com.ota_service.ota_service.entity.Room;
 import com.ota_service.ota_service.entity.RoomImage;
@@ -36,7 +35,6 @@ import com.ota_service.ota_service.repository.RoomInventoryRepository;
 import com.ota_service.ota_service.repository.RoomRateRepository;
 import com.ota_service.ota_service.repository.RoomRepository;
 import com.ota_service.ota_service.repository.ExtranetAccommodationRepository;
-import com.ota_service.ota_service.repository.ExtranetRoomRateRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -59,7 +57,6 @@ public class ExtranetUpdateService {
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
     private final RoomRateRepository roomRateRepository;
-    private final ExtranetRoomRateRepository extranetRoomRateRepository;
     private final RoomInventoryRepository roomInventoryRepository;
     private final RegionResolveService regionResolveService;
     private final ExtranetAccommodationService extranetAccommodationService;
@@ -158,24 +155,20 @@ public class ExtranetUpdateService {
         Room room = resolveOwnedRoom(extranetId, roomCode);
         validateRateRequests(request.rates());
 
-        List<ExtranetRoomRate> existingRates = extranetRoomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(List.of(room.getId()));
+        List<RoomRate> existingRates = roomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(List.of(room.getId()));
         if (!existingRates.isEmpty()) {
             LocalDateTime deletedAt = LocalDateTime.now();
-            for (ExtranetRoomRate rate : existingRates) {
+            for (RoomRate rate : existingRates) {
                 rate.softDelete(deletedAt);
-                RoomRate canonicalRate = roomRateRepository.findById(rate.getRoomRateId())
-                        .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "원본 요금에 연결된 통합 요금제가 없습니다."));
-                canonicalRate.softDelete(deletedAt);
-                roomRateRepository.save(canonicalRate);
             }
-            extranetRoomRateRepository.saveAll(existingRates);
+            roomRateRepository.saveAll(existingRates);
         }
 
-        List<ExtranetRoomRate> savedRates = new ArrayList<>();
+        List<RoomRate> savedRates = new ArrayList<>();
         for (CreateExtranetRoomRateRequest rateRequest : request.rates()) {
             LocalDate date = rateRequest.validFrom();
             while (!date.isAfter(rateRequest.validTo())) {
-                RoomRate canonicalRate = roomRateRepository.save(RoomRate.create(
+                savedRates.add(roomRateRepository.save(RoomRate.create(
                         room.getId(),
                         rateRequest.rateName(),
                         rateRequest.basePrice(),
@@ -183,21 +176,10 @@ public class ExtranetUpdateService {
                         rateRequest.salePrice(),
                         rateRequest.refundable(),
                         date
-                ));
-                savedRates.add(ExtranetRoomRate.create(
-                        room.getId(),
-                        canonicalRate.getId(),
-                        rateRequest.rateName(),
-                        rateRequest.basePrice(),
-                        rateRequest.currency(),
-                        rateRequest.salePrice(),
-                        rateRequest.refundable(),
-                        date
-                ));
+                )));
                 date = date.plusDays(1);
             }
         }
-        savedRates = extranetRoomRateRepository.saveAll(savedRates);
 
         return UpdateExtranetRoomRatesResponse.of(
                 roomCode,
@@ -212,6 +194,7 @@ public class ExtranetUpdateService {
             UpdateExtranetRoomInventoriesRequest request
     ) {
         Room room = resolveOwnedRoom(extranetId, roomCode);
+        validateInventoryEditable(room);
         validateInventoryRequests(request.inventories());
 
         List<RoomInventory> existingInventories = roomInventoryRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscInventoryDateAsc(List.of(room.getId()));
@@ -261,6 +244,14 @@ public class ExtranetUpdateService {
             throw new ApiException(ExceptionType.ACCESS_DENIED, "해당 객실을 수정할 권한이 없습니다.");
         }
         return room;
+    }
+
+    private void validateInventoryEditable(Room room) {
+        Accommodation accommodation = accommodationRepository.findById(room.getAccommodationId())
+                .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "객실에 연결된 숙소 정보가 존재하지 않습니다."));
+        if (accommodation.getSupplierProductId() != null && !accommodation.getSupplierProductId().isBlank()) {
+            throw new ApiException(ExceptionType.ACCESS_DENIED, "외부 연동 상품의 재고는 판매자가 직접 수정할 수 없습니다.");
+        }
     }
 
     private void validateRoom(Room room) {

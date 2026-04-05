@@ -243,32 +243,6 @@ CREATE TABLE ROOM_RATES (
     CONSTRAINT chk_room_rates_sale_price CHECK (sale_price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='객실별 판매 요금 정책';
 
-CREATE TABLE EXTRANET_ROOM_RATES (
-    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '판매자 원본 요금 ID',
-    room_id BIGINT NOT NULL COMMENT '객실 ID',
-    room_rate_id BIGINT NOT NULL COMMENT '통합 요금제 ID',
-    rate_name VARCHAR(255) NOT NULL COMMENT '요금명',
-    base_price DECIMAL(12,2) NOT NULL COMMENT '기본 요금',
-    currency VARCHAR(10) NOT NULL COMMENT '통화',
-    sale_price DECIMAL(12,2) NOT NULL COMMENT '판매 요금',
-    refundable_yn BOOLEAN NOT NULL DEFAULT FALSE COMMENT '환불 가능 여부',
-    rate_date DATE NOT NULL COMMENT '요금 일자',
-    active_yn BOOLEAN NOT NULL DEFAULT TRUE COMMENT '활성 여부',
-    deleted_at DATETIME NULL COMMENT '삭제 일시',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    PRIMARY KEY (id),
-    UNIQUE KEY uk_extranet_room_rates_room_rate_id (room_rate_id),
-    KEY idx_extranet_room_rates_room_id (room_id),
-    KEY idx_extranet_room_rates_active (room_id, active_yn),
-    CONSTRAINT fk_extranet_room_rates_room
-        FOREIGN KEY (room_id) REFERENCES ROOMS (id),
-    CONSTRAINT fk_extranet_room_rates_room_rate
-        FOREIGN KEY (room_rate_id) REFERENCES ROOM_RATES (id),
-    CONSTRAINT chk_extranet_room_rates_base_price CHECK (base_price >= 0),
-    CONSTRAINT chk_extranet_room_rates_sale_price CHECK (sale_price >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Extranet 원본 객실 요금 정보';
-
 CREATE TABLE SUPPLIER_ACCOMMODATIONS (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT '외부 숙소 매핑 ID',
     source VARCHAR(30) NOT NULL COMMENT '외부 공급사',
@@ -395,8 +369,9 @@ CREATE TABLE RESERVATIONS (
     room_id BIGINT NOT NULL COMMENT '객실 ID',
     room_rate_id BIGINT NOT NULL COMMENT '적용 요금 ID',
     reservation_no VARCHAR(100) NOT NULL COMMENT '예약 번호',
-    check_in_date DATE NOT NULL COMMENT '체크인 날짜',
-    check_out_date DATE NOT NULL COMMENT '체크아웃 날짜',
+    supplier_booking_number VARCHAR(100) NULL COMMENT '공급사 예약 번호',
+    check_in_at DATETIME NOT NULL COMMENT '체크인 일시',
+    check_out_at DATETIME NOT NULL COMMENT '체크아웃 일시',
     guest_name VARCHAR(100) NOT NULL COMMENT '투숙객명',
     guest_phone_number VARCHAR(30) NOT NULL COMMENT '투숙객 연락처',
     adult_count INT NOT NULL DEFAULT 1 COMMENT '성인 수',
@@ -416,7 +391,7 @@ CREATE TABLE RESERVATIONS (
     KEY idx_reservations_room_id (room_id),
     KEY idx_reservations_room_rate_id (room_rate_id),
     KEY idx_reservations_status (reservation_status),
-    KEY idx_reservations_check_in_out (check_in_date, check_out_date),
+    KEY idx_reservations_check_in_out (check_in_at, check_out_at),
     CONSTRAINT fk_reservations_user
         FOREIGN KEY (user_id) REFERENCES USERS (id),
     CONSTRAINT fk_reservations_accommodation
@@ -428,7 +403,7 @@ CREATE TABLE RESERVATIONS (
     CONSTRAINT chk_reservations_adult_count CHECK (adult_count >= 1),
     CONSTRAINT chk_reservations_child_count CHECK (child_count >= 0),
     CONSTRAINT chk_reservations_total_amount CHECK (total_amount >= 0),
-    CONSTRAINT chk_reservations_stay_range CHECK (check_out_date > check_in_date)
+    CONSTRAINT chk_reservations_stay_range CHECK (check_out_at > check_in_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사용자 숙소 예약 정보';
 
 CREATE TABLE PAYMENTS (

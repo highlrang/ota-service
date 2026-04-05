@@ -199,10 +199,9 @@ Extranet 판매자가 등록한 원본 숙소 데이터를 관리한다.
 | currency | VARCHAR(10) | 통화 |
 | sale_price | DECIMAL(12,2) | 판매 요금 |
 | refundable_yn | BOOLEAN | 환불 가능 여부 |
-| min_stay_nights | INT | 최소 숙박 일수 |
-| max_stay_nights | INT | 최대 숙박 일수 |
-| valid_from | DATE | 적용 시작일 |
-| valid_to | DATE | 적용 종료일 |
+| rate_date | DATE | 요금 일자 |
+| active_yn | BOOLEAN | 활성 여부 |
+| deleted_at | DATETIME | 삭제 일시 |
 | created_at | DATETIME | 생성일시 |
 | updated_at | DATETIME | 수정일시 |
 

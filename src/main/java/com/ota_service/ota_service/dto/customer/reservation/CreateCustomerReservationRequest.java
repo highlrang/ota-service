@@ -1,5 +1,6 @@
 package com.ota_service.ota_service.dto.customer.reservation;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -7,7 +8,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record CreateCustomerReservationRequest(
         @Schema(example = "김여행")
@@ -26,14 +27,16 @@ public record CreateCustomerReservationRequest(
         @NotBlank
         String roomCode,
 
-        @Schema(example = "2026-04-10")
+        @Schema(example = "2026-04-10 15:00", description = "yyyy-MM-dd HH:mm 기준 체크인 일시")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
         @NotNull
         @FutureOrPresent
-        LocalDate checkInDate,
+        LocalDateTime checkInAt,
 
-        @Schema(example = "2026-04-12")
+        @Schema(example = "2026-04-12 11:00", description = "yyyy-MM-dd HH:mm 기준 체크아웃 일시")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
         @NotNull
-        LocalDate checkOutDate,
+        LocalDateTime checkOutAt,
 
         @Schema(example = "CARD")
         @NotBlank
