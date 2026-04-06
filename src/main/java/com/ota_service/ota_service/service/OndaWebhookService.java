@@ -14,7 +14,6 @@ import com.ota_service.ota_service.entity.Room;
 import com.ota_service.ota_service.entity.RoomInventory;
 import com.ota_service.ota_service.entity.RoomRate;
 import com.ota_service.ota_service.entity.SupplierRatePlanInventory;
-import com.ota_service.ota_service.enums.AccommodationSourceType;
 import com.ota_service.ota_service.enums.BusinessStatus;
 import com.ota_service.ota_service.enums.SupplierSourceType;
 import com.ota_service.ota_service.exception.ApiException;
@@ -164,22 +163,6 @@ public class OndaWebhookService {
         if (supplierAccommodation != null) {
             accommodation = accommodationRepository.findById(supplierAccommodation.getAccommodationId())
                     .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 숙소 매핑에 연결된 통합 숙소가 없습니다."));
-            accommodation.updateSupplier(
-                    content.name(),
-                    content.regionType(),
-                    content.accommodationType(),
-                    content.regionId(),
-                    content.address(),
-                    content.latitude(),
-                    content.longitude(),
-                    content.thumbnailImage(),
-                    defaultTime(content.checkInTime(), LocalTime.of(15, 0)),
-                    defaultTime(content.checkOutTime(), LocalTime.of(11, 0))
-            );
-            accommodation.setBusinessStatus(BusinessStatus.OPEN);
-            if (accommodation.getSourceType() == AccommodationSourceType.SUPPLIER) {
-                accommodation.setSupplierProductId(propertyId);
-            }
         } else {
             accommodation = accommodationRepository.findFirstByNameAndAddress(content.name(), content.address())
                     .orElseGet(() -> {
@@ -203,23 +186,23 @@ public class OndaWebhookService {
             if (accommodation.getId() == null) {
                 isNew = true;
             }
+        }
 
-            if (accommodation.getSourceType() == AccommodationSourceType.SUPPLIER) {
-                accommodation.updateSupplier(
-                        content.name(),
-                        content.regionType(),
-                        content.accommodationType(),
-                        content.regionId(),
-                        content.address(),
-                        content.latitude(),
-                        content.longitude(),
-                        content.thumbnailImage(),
-                        defaultTime(content.checkInTime(), LocalTime.of(15, 0)),
-                        defaultTime(content.checkOutTime(), LocalTime.of(11, 0))
-                );
-                accommodation.setBusinessStatus(BusinessStatus.OPEN);
-                accommodation.setSupplierProductId(propertyId);
-            }
+        if (isSupplierSyncAllowed(accommodation)) {
+            accommodation.updateSupplier(
+                    content.name(),
+                    content.regionType(),
+                    content.accommodationType(),
+                    content.regionId(),
+                    content.address(),
+                    content.latitude(),
+                    content.longitude(),
+                    content.thumbnailImage(),
+                    defaultTime(content.checkInTime(), LocalTime.of(15, 0)),
+                    defaultTime(content.checkOutTime(), LocalTime.of(11, 0))
+            );
+            accommodation.setBusinessStatus(BusinessStatus.OPEN);
+            accommodation.setSupplierProductId(propertyId);
         }
 
         Accommodation savedAccommodation = accommodationRepository.save(accommodation);
@@ -228,7 +211,7 @@ public class OndaWebhookService {
             savedAccommodation = accommodationRepository.save(savedAccommodation);
         }
 
-        if (savedAccommodation.getSourceType() == AccommodationSourceType.SUPPLIER) {
+        if (isSupplierSyncManaged(savedAccommodation)) {
             Long savedAccommodationId = savedAccommodation.getId();
             AccommodationDetail detail = accommodationDetailRepository.findByAccommodationId(savedAccommodation.getId())
                     .orElseGet(() -> AccommodationDetail.of(savedAccommodationId, content.description(), content.extraInfo()));
@@ -361,7 +344,7 @@ public class OndaWebhookService {
 
                     accommodationRepository.findById(supplierAccommodation.getAccommodationId())
                             .ifPresent(accommodation -> {
-                                if (accommodation.getSourceType() == AccommodationSourceType.SUPPLIER) {
+                                if (isSupplierSyncManaged(accommodation)) {
                                     accommodation.setBusinessStatus(BusinessStatus.CLOSED);
                                     accommodationRepository.save(accommodation);
                                 }
@@ -519,7 +502,17 @@ public class OndaWebhookService {
         SupplierAccommodation supplierAccommodation = ensureSupplierAccommodation(propertyId);
         Accommodation accommodation = accommodationRepository.findById(supplierAccommodation.getAccommodationId())
                 .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "외부 숙소 매핑에 연결된 통합 숙소가 없습니다."));
-        return accommodation.getSourceType() == AccommodationSourceType.SUPPLIER;
+        return isSupplierSyncManaged(accommodation);
+    }
+
+    private boolean isSupplierSyncAllowed(Accommodation accommodation) {
+        return !Boolean.TRUE.equals(accommodation.getSupplierSyncBlocked());
+    }
+
+    private boolean isSupplierSyncManaged(Accommodation accommodation) {
+        return isSupplierSyncAllowed(accommodation)
+                && accommodation.getSupplierProductId() != null
+                && !accommodation.getSupplierProductId().isBlank();
     }
 
     private SupplierRoom ensureSupplierRoom(String propertyId, String roomtypeId) {

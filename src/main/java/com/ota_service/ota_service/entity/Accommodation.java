@@ -43,6 +43,9 @@ public class Accommodation extends BaseTimeEntity {
     @Column(name = "supplier_product_id", length = 100)
     private String supplierProductId;
 
+    @Column(name = "supplier_sync_blocked", nullable = false)
+    private Boolean supplierSyncBlocked;
+
     @Column(nullable = false, length = 255)
     private String name;
 
@@ -97,6 +100,7 @@ public class Accommodation extends BaseTimeEntity {
         accommodation.sourceType = AccommodationSourceType.EXTRANET;
         accommodation.extranetId = extranetId;
         accommodation.supplierProductId = null;
+        accommodation.supplierSyncBlocked = false;
         accommodation.name = name;
         accommodation.regionType = regionType;
         accommodation.accommodationType = accommodationType;
@@ -129,6 +133,7 @@ public class Accommodation extends BaseTimeEntity {
         accommodation.sourceType = AccommodationSourceType.SUPPLIER;
         accommodation.extranetId = null;
         accommodation.supplierProductId = null;
+        accommodation.supplierSyncBlocked = false;
         accommodation.name = name;
         accommodation.regionType = regionType;
         accommodation.accommodationType = accommodationType;

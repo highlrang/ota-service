@@ -5,15 +5,20 @@ import com.ota_service.ota_service.dto.extranet.accommodation.CreateExtranetAcco
 import com.ota_service.ota_service.dto.extranet.accommodation.CreateExtranetAccommodationResponse;
 import com.ota_service.ota_service.dto.extranet.accommodation.ExtranetAccommodationDetailResponse;
 import com.ota_service.ota_service.dto.extranet.accommodation.ExtranetAccommodationSummaryResponse;
+import com.ota_service.ota_service.dto.extranet.reservation.ExtranetReservationPageResponse;
 import com.ota_service.ota_service.dto.extranet.accommodation.UpdateExtranetAccommodationRequest;
 import com.ota_service.ota_service.security.AuthenticatedAccount;
 import com.ota_service.ota_service.service.ExtranetAccommodationService;
+import com.ota_service.ota_service.service.ExtranetReservationService;
 import com.ota_service.ota_service.service.ExtranetUpdateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ExtranetAccommodationController {
 
     private final ExtranetAccommodationService extranetAccommodationService;
+    private final ExtranetReservationService extranetReservationService;
     private final ExtranetUpdateService extranetUpdateService;
 
     @Operation(summary = "내 등록 숙소 상세 조회", description = "숙소 기본 정보와 객실 요약 목록을 조회합니다.")
@@ -50,6 +56,22 @@ public class ExtranetAccommodationController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(
                 extranetAccommodationService.getMyAccommodations(account.accountId())
+        ));
+    }
+
+    @Operation(summary = "숙소별 예약 목록 조회", description = "판매자가 소유한 특정 숙소의 예약 목록을 페이지 단위로 조회합니다.")
+    @GetMapping("/{accommodationCode}/reservations")
+    public ResponseEntity<ApiResponse<ExtranetReservationPageResponse>> getAccommodationReservations(
+            @AuthenticationPrincipal AuthenticatedAccount account,
+            @PathVariable String accommodationCode,
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                extranetReservationService.getAccommodationReservations(
+                        account.accountId(),
+                        accommodationCode,
+                        pageable
+                )
         ));
     }
 

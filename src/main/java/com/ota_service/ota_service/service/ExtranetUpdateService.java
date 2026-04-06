@@ -71,6 +71,7 @@ public class ExtranetUpdateService {
                 .orElseThrow(() -> new ApiException(ExceptionType.ACCESS_DENIED, "해당 숙소를 수정할 권한이 없습니다."));
         Accommodation accommodation = accommodationRepository.findById(extranetAccommodation.getAccommodationId())
                 .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "존재하지 않는 숙소입니다."));
+        validateAccommodationEditable(accommodation);
 
         Region region = request.addressInfo() == null ? null : regionResolveService.resolve(request.addressInfo());
         String displayAddress = request.addressInfo() == null ? accommodation.getAddress()
@@ -104,6 +105,7 @@ public class ExtranetUpdateService {
     @Transactional
     public ExtranetRoomDetailViewResponse updateRoom(Long extranetId, String roomCode, UpdateExtranetRoomRequest request) {
         Room room = resolveOwnedRoom(extranetId, roomCode);
+        validateRoomEditable(room);
 
         room.update(
                 request.name() == null ? room.getName() : request.name(),
@@ -153,6 +155,7 @@ public class ExtranetUpdateService {
             UpdateExtranetRoomRatesRequest request
     ) {
         Room room = resolveOwnedRoom(extranetId, roomCode);
+        validateRateEditable(room);
         validateRateRequests(request.rates());
 
         List<RoomRate> existingRates = roomRateRepository.findAllByRoomIdInAndActiveTrueOrderByRoomIdAscRateDateAsc(List.of(room.getId()));
@@ -247,11 +250,41 @@ public class ExtranetUpdateService {
     }
 
     private void validateInventoryEditable(Room room) {
-        Accommodation accommodation = accommodationRepository.findById(room.getAccommodationId())
-                .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "객실에 연결된 숙소 정보가 존재하지 않습니다."));
-        if (accommodation.getSupplierProductId() != null && !accommodation.getSupplierProductId().isBlank()) {
+        Accommodation accommodation = loadAccommodation(room);
+        if (isSupplierSyncManaged(accommodation)) {
             throw new ApiException(ExceptionType.ACCESS_DENIED, "외부 연동 상품의 재고는 판매자가 직접 수정할 수 없습니다.");
         }
+    }
+
+    private void validateRateEditable(Room room) {
+        Accommodation accommodation = loadAccommodation(room);
+        if (isSupplierSyncManaged(accommodation)) {
+            throw new ApiException(ExceptionType.ACCESS_DENIED, "외부 연동 상품의 요금은 판매자가 직접 수정할 수 없습니다.");
+        }
+    }
+
+    private void validateAccommodationEditable(Accommodation accommodation) {
+        if (isSupplierSyncManaged(accommodation)) {
+            throw new ApiException(ExceptionType.ACCESS_DENIED, "외부 연동 상품의 숙소 정보는 판매자가 직접 수정할 수 없습니다.");
+        }
+    }
+
+    private void validateRoomEditable(Room room) {
+        Accommodation accommodation = loadAccommodation(room);
+        if (isSupplierSyncManaged(accommodation)) {
+            throw new ApiException(ExceptionType.ACCESS_DENIED, "외부 연동 상품의 객실 정보는 판매자가 직접 수정할 수 없습니다.");
+        }
+    }
+
+    private Accommodation loadAccommodation(Room room) {
+        return accommodationRepository.findById(room.getAccommodationId())
+                .orElseThrow(() -> new ApiException(ExceptionType.INVALID_INPUT, "객실에 연결된 숙소 정보가 존재하지 않습니다."));
+    }
+
+    private boolean isSupplierSyncManaged(Accommodation accommodation) {
+        return !Boolean.TRUE.equals(accommodation.getSupplierSyncBlocked())
+                && accommodation.getSupplierProductId() != null
+                && !accommodation.getSupplierProductId().isBlank();
     }
 
     private void validateRoom(Room room) {

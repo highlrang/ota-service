@@ -87,6 +87,7 @@ CREATE TABLE ACCOMMODATIONS (
     source_type ENUM('EXTRANET', 'SUPPLIER') NOT NULL COMMENT 'Extranet / Supplier',
     extranet_id BIGINT NULL COMMENT 'Extranet 판매자 ID',
     supplier_product_id VARCHAR(100) NULL COMMENT '외부 공급사 상품 번호',
+    supplier_sync_blocked BOOLEAN NOT NULL DEFAULT FALSE COMMENT '외부 공급사 동기화 차단 여부',
     region_type ENUM('DOMESTIC', 'OVERSEAS') NOT NULL COMMENT '국내 / 해외',
     accommodation_type ENUM(
         'HOTEL_RESORT',

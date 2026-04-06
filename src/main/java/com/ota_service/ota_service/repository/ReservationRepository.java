@@ -26,6 +26,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             String guestPhoneNumber
     );
 
+    List<Reservation> findAllByAccommodationIdOrderByCreatedAtDesc(Long accommodationId);
+
     List<Reservation> findAllByReservationStatusAndCheckOutAtBefore(
             ReservationStatus reservationStatus,
             LocalDateTime checkOutAt
